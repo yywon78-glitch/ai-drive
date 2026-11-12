@@ -30,11 +30,11 @@
   <div class="body" id="pane-list">
     <div class="bp">
       <!-- 종류 필터 -->
-      <div class="pills" style="border-bottom:none;padding:4px 0 4px;">
-        <div class="pill on"  id="pf-all"  onclick="setFilter('all',this)">전체</div>
-        <div class="pill"     id="pf-hi"   onclick="setFilter('hipass',this)">⚡ 하이패스</div>
-        <div class="pill"     id="pf-ins"  onclick="setFilter('insurance',this)">🛡 보험·세금</div>
-        <div class="pill"     id="pf-oth"  onclick="setFilter('other',this)">💸 기타</div>
+      <div class="period-filter" style="margin:0 -14px;padding:8px 14px;">
+        <button class="pf-btn on" id="pf-all" onclick="setFilter('all',this)">전체</button>
+        <button class="pf-btn"    id="pf-hi"  onclick="setFilter('hipass',this)">⚡ 하이패스</button>
+        <button class="pf-btn"    id="pf-ins" onclick="setFilter('insurance',this)">🛡 보험·세금</button>
+        <button class="pf-btn"    id="pf-oth" onclick="setFilter('other',this)">💸 기타</button>
       </div>
 
       <!-- 목록 -->
@@ -232,7 +232,7 @@ function setPeriod(mo, el) {
 
 function setFilter(f, el) {
   _etcFilter = f;
-  document.querySelectorAll('.pills .pill').forEach(p => p.classList.remove('on'));
+  document.querySelectorAll('#pf-all,#pf-hi,#pf-ins,#pf-oth').forEach(b => b.classList.remove('on'));
   el.classList.add('on');
   renderList();
 }
