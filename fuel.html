@@ -30,6 +30,15 @@
   <div class="body" id="pane-input" style="display:none">
     <div class="bp">
       <div class="m-card form">
+        <!-- 영수증 스캔 -->
+        <div style="display:flex;align-items:center;gap:10px;">
+          <label style="display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:9px;background:#f0fdf4;border:1.5px solid #bbf7d0;color:#15803d;font-size:13px;font-weight:700;cursor:pointer;">
+            📷 영수증 스캔
+            <input id="f_scan" type="file" accept="image/*" capture="environment" style="display:none" onchange="onFuelScan(event)">
+          </label>
+          <span id="f_scan_status" style="font-size:12px;color:var(--t3);"></span>
+        </div>
+        <div id="f_receipt_thumb" style="display:none;margin:-4px 0;"><img id="f_receipt_img" style="width:100%;max-height:140px;object-fit:contain;border-radius:8px;border:1px solid var(--bdr);"></div>
         <div class="m-row">
           <div class="m-group">
             <label class="m-label">날짜 *</label>
@@ -91,6 +100,7 @@
     </div>
     <div class="m-body">
       <input type="hidden" id="ef_id">
+      <div id="ef_receipt_thumb" style="display:none;margin-bottom:4px;"><img id="ef_receipt_img" style="width:100%;max-height:120px;object-fit:contain;border-radius:8px;border:1px solid var(--bdr);"></div>
       <div class="m-row">
         <div class="m-group"><label class="m-label">날짜 *</label><input type="date" class="m-input" id="ef_date"></div>
         <div class="m-group"><label class="m-label">주행거리 (km)</label><input type="number" class="m-input" id="ef_mileage"></div>
@@ -128,6 +138,33 @@ function _filtered() {
 }
 
 renderList();
+
+let _fuelScanData = null; /* 스캔된 이미지 dataUrl */
+
+async function onFuelScan(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const st = document.getElementById('f_scan_status');
+  st.textContent = '🔍 인식 중...';
+  const reader = new FileReader();
+  reader.onload = async ev => {
+    const dataUrl = ev.target.result;
+    _fuelScanData = dataUrl;
+    /* 썸네일 표시 */
+    document.getElementById('f_receipt_img').src = dataUrl;
+    document.getElementById('f_receipt_thumb').style.display = '';
+    /* OCR */
+    const result = await ocrReceipt(dataUrl, 'fuel');
+    e.target.value = '';
+    if (!result) { st.textContent = '❌ 인식 실패 — 직접 입력해주세요'; return; }
+    if (result.date)         document.getElementById('f_date').value    = result.date;
+    if (result.liters)       document.getElementById('f_liters').value  = result.liters;
+    if (result.pricePerLiter)document.getElementById('f_price').value   = result.pricePerLiter;
+    if (result.station)      document.getElementById('f_station').value = result.station;
+    calcFuel();
+    st.textContent = '✅ 인식 완료 — 확인 후 저장하세요';
+  };
+  reader.readAsDataURL(file);
+}
 
 function prefillMileage() {
   const fuel = getRecs('fuel');
@@ -178,9 +215,15 @@ function saveFuel() {
     station: document.getElementById('f_station').value.trim()
   });
   updateVehicleMileage(mileage);
+  /* 영수증 이미지 저장 */
+  const recId = recs[0]?.id;
+  if (_fuelScanData && recId) ImgDB.set(recId, _fuelScanData).catch(()=>{});
+  _fuelScanData = null;
+  document.getElementById('f_receipt_thumb').style.display = 'none';
+  document.getElementById('f_scan_status').textContent = '';
   ['f_mileage','f_liters','f_price','f_station','f_amount','f_effic'].forEach(id => document.getElementById(id).value = '');
   toast('주유 기록이 저장됐습니다 ✓');
-  switchTab('list', document.querySelectorAll('.segtab')[1]);
+  switchTab('list', document.querySelectorAll('.segtab')[0]);
 }
 
 function renderList() {
@@ -234,6 +277,13 @@ function openEditFuel(id) {
   document.getElementById('ef_liters').value  = r.liters  || '';
   document.getElementById('ef_price').value   = r.price   || '';
   document.getElementById('ef_station').value = r.station || '';
+  /* 저장된 영수증 이미지 로드 */
+  const thumb = document.getElementById('ef_receipt_thumb');
+  const img   = document.getElementById('ef_receipt_img');
+  ImgDB.get(id).then(data => {
+    if (data) { img.src = data; thumb.style.display = ''; }
+    else       { thumb.style.display = 'none'; }
+  }).catch(()=>{ thumb.style.display = 'none'; });
   document.getElementById('modal-edit-fuel').classList.add('show');
 }
 function closeEditFuel() { document.getElementById('modal-edit-fuel').classList.remove('show'); }

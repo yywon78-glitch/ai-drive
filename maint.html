@@ -30,6 +30,14 @@
   <div class="body" id="pane-input" style="display:none">
     <div class="bp">
       <div class="m-card form">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <label style="display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:9px;background:#f0fdf4;border:1.5px solid #bbf7d0;color:#15803d;font-size:13px;font-weight:700;cursor:pointer;">
+            📷 영수증 스캔
+            <input id="m_scan" type="file" accept="image/*" capture="environment" style="display:none" onchange="onMaintScan(event)">
+          </label>
+          <span id="m_scan_status" style="font-size:12px;color:var(--t3);"></span>
+        </div>
+        <div id="m_receipt_thumb" style="display:none;margin:-4px 0;"><img id="m_receipt_img" style="width:100%;max-height:140px;object-fit:contain;border-radius:8px;border:1px solid var(--bdr);"></div>
         <div class="m-row">
           <div class="m-group">
             <label class="m-label">날짜 *</label>
@@ -216,10 +224,15 @@ function saveMaint() {
     nextKm:   +document.getElementById('m_next_km').value || 0,
     memo:     document.getElementById('m_memo').value.trim()
   });
+  const maintRecs = getAllRecs(); const newRec = maintRecs[0];
+  if (_maintScanData && newRec) ImgDB.set(newRec.id, _maintScanData).catch(()=>{});
+  _maintScanData = null;
+  document.getElementById('m_receipt_thumb').style.display = 'none';
+  document.getElementById('m_scan_status').textContent = '';
   ['m_amount','m_shop','m_memo','m_next_date','m_next_km','m_mileage'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('m_category').value = '';
   toast('정비 기록이 저장됐습니다 ✓');
-  switchTab('list', document.querySelectorAll('.segtab')[1]);
+  switchTab('list', document.querySelectorAll('.segtab')[0]);
 }
 
 function renderList() {
@@ -313,6 +326,30 @@ function deleteEditMaint() {
     delRec(document.getElementById('em_id').value);
     closeEditMaint(); renderList(); toast('삭제됐습니다');
   });
+}
+
+let _maintScanData = null;
+async function onMaintScan(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const st = document.getElementById('m_scan_status');
+  st.textContent = '🔍 인식 중...';
+  const reader = new FileReader();
+  reader.onload = async ev => {
+    const dataUrl = ev.target.result;
+    _maintScanData = dataUrl;
+    document.getElementById('m_receipt_img').src = dataUrl;
+    document.getElementById('m_receipt_thumb').style.display = '';
+    const result = await ocrReceipt(dataUrl, 'maint');
+    e.target.value = '';
+    if (!result) { st.textContent = '❌ 인식 실패 — 직접 입력해주세요'; return; }
+    if (result.date)   document.getElementById('m_date').value   = result.date;
+    if (result.amount) document.getElementById('m_amount').value = result.amount;
+    if (result.shop)   document.getElementById('m_shop').value   = result.shop;
+    if (result.memo)   document.getElementById('m_memo').value   = result.memo;
+    calcMaint();
+    st.textContent = '✅ 인식 완료 — 확인 후 저장하세요';
+  };
+  reader.readAsDataURL(file);
 }
 
 function render() {

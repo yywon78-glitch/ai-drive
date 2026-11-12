@@ -47,6 +47,16 @@
     <div class="bp">
       <div class="m-card form">
 
+        <!-- 영수증 스캔 -->
+        <div style="display:flex;align-items:center;gap:10px;">
+          <label style="display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:9px;background:#f0fdf4;border:1.5px solid #bbf7d0;color:#15803d;font-size:13px;font-weight:700;cursor:pointer;">
+            📷 영수증 스캔
+            <input id="etc_scan" type="file" accept="image/*" capture="environment" style="display:none" onchange="onEtcScan(event)">
+          </label>
+          <span id="etc_scan_status" style="font-size:12px;color:var(--t3);"></span>
+        </div>
+        <div id="etc_receipt_thumb" style="display:none;margin:-4px 0;"><img id="etc_receipt_img" style="width:100%;max-height:140px;object-fit:contain;border-radius:8px;border:1px solid var(--bdr);"></div>
+
         <!-- 종류 선택 -->
         <div class="m-group">
           <label class="m-label">종류 *</label>
@@ -184,6 +194,35 @@ function switchTab(id, el) {
   if (id === 'input') { setToday('et_date'); onTypeChange(); }
 }
 
+let _etcScanData = null;
+async function onEtcScan(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const st = document.getElementById('etc_scan_status');
+  st.textContent = '🔍 인식 중...';
+  const reader = new FileReader();
+  reader.onload = async ev => {
+    const dataUrl = ev.target.result;
+    _etcScanData = dataUrl;
+    document.getElementById('etc_receipt_img').src = dataUrl;
+    document.getElementById('etc_receipt_thumb').style.display = '';
+    const type = document.getElementById('et_type').value;
+    const ocrType = type === 'hipass' ? 'other' : type === 'insurance' ? 'insurance' : 'other';
+    const result = await ocrReceipt(dataUrl, ocrType);
+    e.target.value = '';
+    if (!result) { st.textContent = '❌ 인식 실패 — 직접 입력해주세요'; return; }
+    if (result.date)   document.getElementById('et_date').value   = result.date;
+    if (result.amount) document.getElementById('et_amount').value = result.amount;
+    if (type === 'insurance') {
+      if (result.expiry) document.getElementById('et_expiry').value = result.expiry;
+      if (result.memo)   document.getElementById('et_insmemo').value = result.memo;
+    }
+    if (type === 'other' && result.desc) document.getElementById('et_desc').value = result.desc;
+    if (type === 'hipass') onAmountChange();
+    st.textContent = '✅ 인식 완료 — 확인 후 저장하세요';
+  };
+  reader.readAsDataURL(file);
+}
+
 function setPeriod(mo, el) {
   _etcMonths = mo;
   document.querySelectorAll('.pf-btn').forEach(b => b.classList.remove('on'));
@@ -287,6 +326,12 @@ function saveEtc() {
     document.getElementById('et_desc').value = '';
   }
 
+  /* 영수증 이미지 저장 */
+  const etcAllRecs = getAllRecs(); const newEtcRec = etcAllRecs[0];
+  if (_etcScanData && newEtcRec) ImgDB.set(newEtcRec.id, _etcScanData).catch(()=>{});
+  _etcScanData = null;
+  document.getElementById('etc_receipt_thumb').style.display = 'none';
+  document.getElementById('etc_scan_status').textContent = '';
   document.getElementById('et_amount').value = '';
   document.getElementById('et_hibalance').value = '';
   toast('저장됐습니다 ✓');

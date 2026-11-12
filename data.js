@@ -1,4 +1,33 @@
 /* ── data.js : 데이터 레이어 ── */
+
+/* ── 영수증 이미지 저장 (IndexedDB) ── */
+const ImgDB = (function(){
+  let _db = null;
+  function _open(){
+    return new Promise((res,rej)=>{
+      if(_db) return res(_db);
+      const req = indexedDB.open('drive_imgs', 1);
+      req.onupgradeneeded = e => e.target.result.createObjectStore('imgs');
+      req.onsuccess = e => { _db = e.target.result; res(_db); };
+      req.onerror = rej;
+    });
+  }
+  return {
+    set:(id,data)=>_open().then(db=>new Promise((res,rej)=>{
+      const tx=db.transaction('imgs','readwrite');
+      tx.objectStore('imgs').put(data,id); tx.oncomplete=res; tx.onerror=rej;
+    })),
+    get:(id)=>_open().then(db=>new Promise((res,rej)=>{
+      const req=db.transaction('imgs','readonly').objectStore('imgs').get(id);
+      req.onsuccess=e=>res(e.target.result||null); req.onerror=rej;
+    })),
+    del:(id)=>_open().then(db=>new Promise(res=>{
+      const tx=db.transaction('imgs','readwrite');
+      tx.objectStore('imgs').delete(id); tx.oncomplete=res;
+    }))
+  };
+})();
+
 const DB = {
   get(k, d=[]) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
   set(k, v) { localStorage.setItem(k, JSON.stringify(v)); },
