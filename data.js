@@ -99,6 +99,8 @@ function renderVehicleSelect(elId) {
 /* ── 샘플 데이터 주입 (drive_sample_v1 플래그) ── */
 (function injectSample() {
   if (localStorage.getItem('drive_sample_v1')) return;
+  /* 이미 차량이 등록돼 있으면 샘플 주입 건너뜀 */
+  if (getVehicles().length > 0) { localStorage.setItem('drive_sample_v1','1'); return; }
 
   const vid = 'v_s1';
   const vehicle = {
