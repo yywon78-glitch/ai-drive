@@ -57,14 +57,15 @@
         </div>
         <div id="etc_receipt_thumb" style="display:none;margin:-4px 0;"><img id="etc_receipt_img" style="width:100%;max-height:140px;object-fit:contain;border-radius:8px;border:1px solid var(--bdr);"></div>
 
-        <!-- 종류 선택 -->
+        <!-- 종류 선택 (팝업) -->
         <div class="m-group">
           <label class="m-label">종류 *</label>
-          <select class="m-select" id="et_type" onchange="onTypeChange()">
-            <option value="hipass">⚡ 하이패스 충전</option>
-            <option value="insurance">🛡 보험·세금</option>
-            <option value="other">💸 기타 지출</option>
-          </select>
+          <input type="hidden" id="et_type" value="hipass">
+          <button type="button" id="et_type_btn" onclick="openTypePopup()"
+            style="width:100%;padding:10px 14px;border-radius:9px;background:var(--bg);border:1.5px solid var(--bdr);font-size:14px;font-weight:600;color:var(--t1);text-align:left;cursor:pointer;display:flex;align-items:center;justify-content:space-between;">
+            <span id="et_type_lbl">⚡ 하이패스 충전</span>
+            <span style="color:var(--t3);font-size:12px;">▼</span>
+          </button>
         </div>
 
         <!-- 공통: 날짜 / 금액 -->
@@ -130,6 +131,31 @@
   </div>
 
   <nav class="tabbar" id="tabbar"></nav>
+</div>
+
+<!-- 지출구분 선택 팝업 -->
+<div class="moverlay" id="modal-type-sel" onclick="if(event.target===this)closeTypePopup()">
+  <div class="msheet">
+    <div class="m-handle"></div>
+    <div class="m-title">지출 구분 선택</div>
+    <div style="display:flex;flex-direction:column;gap:10px;padding-bottom:8px;">
+      <button onclick="selectType('hipass')"
+        style="display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:12px;background:var(--bg);border:1.5px solid var(--bdr);cursor:pointer;text-align:left;font-family:inherit;">
+        <span style="font-size:28px;">⚡</span>
+        <div><div style="font-size:15px;font-weight:700;color:var(--t1);">하이패스 충전</div><div style="font-size:12px;color:var(--t3);margin-top:2px;">하이패스 카드 충전 금액</div></div>
+      </button>
+      <button onclick="selectType('insurance')"
+        style="display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:12px;background:var(--bg);border:1.5px solid var(--bdr);cursor:pointer;text-align:left;font-family:inherit;">
+        <span style="font-size:28px;">🛡</span>
+        <div><div style="font-size:15px;font-weight:700;color:var(--t1);">보험·세금</div><div style="font-size:12px;color:var(--t3);margin-top:2px;">자동차보험, 자동차세, 주차비</div></div>
+      </button>
+      <button onclick="selectType('other')"
+        style="display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:12px;background:var(--bg);border:1.5px solid var(--bdr);cursor:pointer;text-align:left;font-family:inherit;">
+        <span style="font-size:28px;">💸</span>
+        <div><div style="font-size:15px;font-weight:700;color:var(--t1);">기타 지출</div><div style="font-size:12px;color:var(--t3);margin-top:2px;">세차, 용품 구매, 기타 비용</div></div>
+      </button>
+    </div>
+  </div>
 </div>
 
 <!-- 기타지출 수정 모달 -->
@@ -289,6 +315,28 @@ function renderList() {
 }
 
 /* ── 입력 ── */
+const _TYPE_LABELS = { hipass:'⚡ 하이패스 충전', insurance:'🛡 보험·세금', other:'💸 기타 지출' };
+
+function openTypePopup() {
+  document.getElementById('modal-type-sel').classList.add('show');
+}
+function closeTypePopup() {
+  document.getElementById('modal-type-sel').classList.remove('show');
+}
+function selectType(t) {
+  document.getElementById('et_type').value      = t;
+  document.getElementById('et_type_lbl').textContent = _TYPE_LABELS[t];
+  /* 선택된 항목 테두리 강조 */
+  document.querySelectorAll('#modal-type-sel button').forEach(b => {
+    b.style.borderColor = '';
+    b.style.background  = '';
+  });
+  event.currentTarget.style.borderColor = 'var(--blue)';
+  event.currentTarget.style.background  = 'var(--blue-lt)';
+  closeTypePopup();
+  onTypeChange();
+}
+
 function onTypeChange() {
   const t = document.getElementById('et_type').value;
   document.getElementById('fields-hipass').style.display    = t === 'hipass'    ? '' : 'none';
