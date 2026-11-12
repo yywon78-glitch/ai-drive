@@ -65,8 +65,15 @@
   <!-- 현황 탭 -->
   <div class="body" id="pane-list">
     <div class="bp">
+      <div style="display:flex;gap:5px;flex-wrap:wrap;padding:2px 0 6px;">
+        <button class="pf-btn on" onclick="setPeriod(1,this)">이번달</button>
+        <button class="pf-btn" onclick="setPeriod(3,this)">3개월</button>
+        <button class="pf-btn" onclick="setPeriod(6,this)">6개월</button>
+        <button class="pf-btn" onclick="setPeriod(12,this)">1년</button>
+        <button class="pf-btn" onclick="setPeriod(0,this)">전체</button>
+      </div>
       <div class="m-card" id="fuelStat"></div>
-      <div class="group-lbl">기록 목록</div>
+      <div class="group-lbl" id="fuelListLbl">기록 목록</div>
       <div style="display:flex;flex-direction:column;gap:7px" id="fuelList"></div>
     </div>
   </div>
@@ -81,6 +88,21 @@ renderTabBar('fuel');
 renderVehicleSelect('vsel');
 setToday('f_date');
 prefillMileage();
+
+let _fuelMonths = 1;
+function setPeriod(mo, el) {
+  _fuelMonths = mo;
+  document.querySelectorAll('.pf-btn').forEach(b => b.classList.remove('on'));
+  el.classList.add('on');
+  renderList();
+}
+function _filtered() {
+  const recs = getRecs('fuel');
+  if (!_fuelMonths) return recs;
+  const c = new Date(); c.setMonth(c.getMonth() - _fuelMonths); c.setDate(1); c.setHours(0,0,0,0);
+  return recs.filter(r => new Date(r.date) >= c);
+}
+
 renderList();
 
 function prefillMileage() {
@@ -137,7 +159,7 @@ function saveFuel() {
 }
 
 function renderList() {
-  const recs = getRecs('fuel');
+  const recs = _filtered();
   const totAmt = recs.reduce((s,r) => s+r.amount, 0);
   const totL   = recs.reduce((s,r) => s+r.liters, 0);
   const effs   = recs.filter(r => r.effic > 0);

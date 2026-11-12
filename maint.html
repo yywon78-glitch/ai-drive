@@ -85,6 +85,13 @@
   <div class="body" id="pane-list">
     <div class="bp">
       <div id="maintUpcoming"></div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;padding:2px 0 6px;">
+        <button class="pf-btn" onclick="setPeriod(1,this)">이번달</button>
+        <button class="pf-btn" onclick="setPeriod(3,this)">3개월</button>
+        <button class="pf-btn" onclick="setPeriod(6,this)">6개월</button>
+        <button class="pf-btn" onclick="setPeriod(12,this)">1년</button>
+        <button class="pf-btn on" onclick="setPeriod(0,this)">전체</button>
+      </div>
       <div class="group-lbl">정비 이력</div>
       <div style="display:flex;flex-direction:column;gap:7px" id="maintList"></div>
     </div>
@@ -99,6 +106,21 @@
 renderTabBar('maint');
 renderVehicleSelect('vsel');
 setToday('m_date');
+
+let _maintMonths = 0;
+function setPeriod(mo, el) {
+  _maintMonths = mo;
+  document.querySelectorAll('.pf-btn').forEach(b => b.classList.remove('on'));
+  el.classList.add('on');
+  renderList();
+}
+function _filtered() {
+  const recs = getRecs('maint');
+  if (!_maintMonths) return recs;
+  const c = new Date(); c.setMonth(c.getMonth() - _maintMonths); c.setDate(1); c.setHours(0,0,0,0);
+  return recs.filter(r => new Date(r.date) >= c);
+}
+
 renderList();
 
 function switchTab(id, el) {
@@ -154,11 +176,11 @@ function saveMaint() {
 }
 
 function renderList() {
-  const recs  = getRecs('maint');
+  const recs  = _filtered();
   const today = new Date();
 
-  /* 임박 알림 (D-90 이내) */
-  const upcoming = recs
+  /* 임박 알림 — 필터 무관하게 전체에서 조회 */
+  const upcoming = getRecs('maint')
     .filter(r => r.nextDate)
     .map(r => ({ ...r, _days: Math.ceil((new Date(r.nextDate) - today) / 86400000) }))
     .filter(r => r._days < 90)
