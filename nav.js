@@ -12,9 +12,9 @@ function renderTabBar(active) {
     { id:'stat',  ic:'📊',  lb:'통계',  href:'stat.html'  }
   ];
   el.innerHTML = tabs.map(t => `
-    <div class="tbi${active === t.id ? ' on' : ''}" onclick="location.href='${t.href}'">
-      <span class="ic">${t.ic}</span>
-      <span class="lb">${t.lb}</span>
+    <div class="tbi${active === t.id ? ' on' : ''}" onclick="location.replace('${t.href}')">
+      <span class="ic" style="pointer-events:none">${t.ic}</span>
+      <span class="lb" style="pointer-events:none">${t.lb}</span>
     </div>`).join('');
 }
 
