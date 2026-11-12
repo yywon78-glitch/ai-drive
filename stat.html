@@ -181,15 +181,15 @@ function mkLine(id, labels, data, color) {
       plugins:{
         legend:{ display:false },
         datalabels:{
-          anchor:'center', align:'top', offset:6,
+          anchor:'end', align:'top', clamp:false,
           formatter: v => v > 0 ? v.toFixed(1) : '',
           font:{ size:9, weight:'700' },
           color: color.replace('.85','1')
         }
       },
-      scales:{ x:{ticks:{font:{size:10}}}, y:{ticks:{font:{size:10}}} },
+      scales:{ x:{ticks:{font:{size:10}}}, y:{ticks:{font:{size:10}}, grace:'20%'} },
       responsive:true,
-      layout:{ padding:{ top:10 } }
+      layout:{ padding:{ top:20 } }
     }
   });
 }
