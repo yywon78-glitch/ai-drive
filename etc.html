@@ -224,7 +224,7 @@ function renderList() {
           <div class="rec-title">충전 · ${r.date}${r.place?' · '+r.place:''}</div>
           <div class="rec-sub">+${numFmt(r.amount)}원 → 잔액 ${numFmt(r.balance)}원</div>
         </div>
-        <span class="rec-del" style="color:var(--blue)" onclick="openEditEtc('${r.id}','${r.type}')">✏️</span>
+        <button class="rec-edit" onclick="openEditEtc('${r.id}','${r.type}')">수정</button>
       </div>`;
     if (r.type === 'insurance') return `
       <div class="rec-row">
@@ -234,7 +234,7 @@ function renderList() {
           <div class="rec-sub">${r.expiry?'만기: '+r.expiry+' ':''}${r.memo||''}</div>
         </div>
         <span class="rec-amt d-orange">${numFmt(r.amount)}원</span>
-        <span class="rec-del" style="color:var(--blue)" onclick="openEditEtc('${r.id}','${r.type}')">✏️</span>
+        <button class="rec-edit" onclick="openEditEtc('${r.id}','${r.type}')">수정</button>
       </div>`;
     return `
       <div class="rec-row">
@@ -244,7 +244,7 @@ function renderList() {
           <div class="rec-sub">${r.date}</div>
         </div>
         <span class="rec-amt">${numFmt(r.amount)}원</span>
-        <span class="rec-del" style="color:var(--blue)" onclick="openEditEtc('${r.id}','${r.type}')">✏️</span>
+        <button class="rec-edit" onclick="openEditEtc('${r.id}','${r.type}')">수정</button>
       </div>`;
   }).join('');
 }

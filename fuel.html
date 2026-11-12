@@ -222,7 +222,7 @@ function renderList() {
         <div class="rec-sub">${r.liters}L · ${numFmt(r.price)}원/L${r.effic>0?' · 연비 '+r.effic.toFixed(1)+'km/L':''}${r.station?' · '+r.station:''}</div>
       </div>
       <span class="rec-amt d-blue">${numFmt(r.amount)}원</span>
-      <span class="rec-del" style="color:var(--blue)" onclick="openEditFuel('${r.id}')">✏️</span>
+      <button class="rec-edit" onclick="openEditFuel('${r.id}')">수정</button>
     </div>`).join('');
 }
 

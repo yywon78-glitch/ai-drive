@@ -167,6 +167,8 @@ html,body { height:100%; background:var(--bg); color:var(--t1); font-family:-app
 .rec-amt   { font-size:13px; font-weight:700; color:var(--t1); white-space:nowrap; flex-shrink:0; }
 .rec-del   { font-size:16px; color:var(--red); opacity:.45; padding:0 2px; cursor:pointer; flex-shrink:0; touch-action:manipulation; }
 .rec-del:active { opacity:1; }
+.rec-edit  { font-size:13px; font-weight:700; padding:5px 10px; border-radius:8px; background:var(--blue-lt); color:var(--blue); cursor:pointer; flex-shrink:0; touch-action:manipulation; border:1.5px solid var(--blue-m); }
+.rec-edit:active { background:var(--blue-m); }
 
 /* 하이패스 잔액 카드 */
 .hipass-card { background:linear-gradient(135deg,#1e40af,#0369a1); color:#fff; border-radius:14px; padding:16px; display:flex; justify-content:space-between; align-items:center; }

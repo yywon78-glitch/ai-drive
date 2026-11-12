@@ -312,7 +312,7 @@ function renderList() {
         <div class="rec-title">${r.from&&r.to ? r.from+'→'+r.to : '운행'}</div>
         <div class="rec-sub">${r.date} · ${(r.dist||0).toFixed(1)}km${r.startTime?' · '+r.startTime:''}${r.endTime?'~'+r.endTime:''}</div>
       </div>
-      <span class="rec-del" style="color:var(--blue)" onclick="openEditDrive('${r.id}')">✏️</span>
+      <button class="rec-edit" onclick="openEditDrive('${r.id}')">수정</button>
     </div>`).join('');
 }
 
