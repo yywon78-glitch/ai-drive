@@ -19,6 +19,13 @@
     <button class="segtab" onclick="switchTab('input',this)">＋ 입력</button>
     <button class="segtab" onclick="switchTab('tl',this)">🗺 타임라인</button>
   </div>
+  <div class="period-filter" id="periodBar">
+    <button class="pf-btn on" onclick="setPeriod(1,this)">이번달</button>
+    <button class="pf-btn" onclick="setPeriod(3,this)">3개월</button>
+    <button class="pf-btn" onclick="setPeriod(6,this)">6개월</button>
+    <button class="pf-btn" onclick="setPeriod(12,this)">1년</button>
+    <button class="pf-btn" onclick="setPeriod(0,this)">전체</button>
+  </div>
 
   <!-- 입력 -->
   <div class="body" id="pane-input" style="display:none">
@@ -88,13 +95,6 @@
   <!-- 현황 -->
   <div class="body" id="pane-list">
     <div class="bp">
-      <div style="display:flex;gap:5px;flex-wrap:wrap;padding:2px 0 6px;">
-        <button class="pf-btn on" onclick="setPeriod(1,this)">이번달</button>
-        <button class="pf-btn" onclick="setPeriod(3,this)">3개월</button>
-        <button class="pf-btn" onclick="setPeriod(6,this)">6개월</button>
-        <button class="pf-btn" onclick="setPeriod(12,this)">1년</button>
-        <button class="pf-btn" onclick="setPeriod(0,this)">전체</button>
-      </div>
       <div class="m-card" id="driveStat"></div>
       <div class="group-lbl">운행 목록</div>
       <div style="display:flex;flex-direction:column;gap:7px" id="driveList"></div>
@@ -192,6 +192,7 @@ function switchTab(id, el) {
   ['input','list','tl'].forEach(p => {
     document.getElementById('pane-'+p).style.display = p === id ? '' : 'none';
   });
+  document.getElementById('periodBar').style.display = id === 'list' ? '' : 'none';
   if (id === 'list') renderList();
 }
 

@@ -18,6 +18,13 @@
     <button class="segtab on" onclick="switchTab('list',this)">📋 현황</button>
     <button class="segtab"    onclick="switchTab('input',this)">＋ 입력</button>
   </div>
+  <div class="period-filter" id="periodBar">
+    <button class="pf-btn on" onclick="setPeriod(1,this)">이번달</button>
+    <button class="pf-btn" onclick="setPeriod(3,this)">3개월</button>
+    <button class="pf-btn" onclick="setPeriod(6,this)">6개월</button>
+    <button class="pf-btn" onclick="setPeriod(12,this)">1년</button>
+    <button class="pf-btn" onclick="setPeriod(0,this)">전체</button>
+  </div>
 
   <!-- 현황 -->
   <div class="body" id="pane-list">
@@ -36,14 +43,6 @@
         </div>
       </div>
 
-      <!-- 기간 필터 -->
-      <div style="display:flex;gap:5px;flex-wrap:wrap;padding:2px 0 4px;">
-        <button class="pf-btn on" onclick="setPeriod(1,this)">이번달</button>
-        <button class="pf-btn" onclick="setPeriod(3,this)">3개월</button>
-        <button class="pf-btn" onclick="setPeriod(6,this)">6개월</button>
-        <button class="pf-btn" onclick="setPeriod(12,this)">1년</button>
-        <button class="pf-btn" onclick="setPeriod(0,this)">전체</button>
-      </div>
       <!-- 종류 필터 -->
       <div class="pills" style="border-bottom:none;padding:4px 0 4px;">
         <div class="pill on"  id="pf-all"  onclick="setFilter('all',this)">전체</div>
@@ -153,6 +152,7 @@ function switchTab(id, el) {
   el.classList.add('on');
   document.getElementById('pane-list').style.display  = id === 'list'  ? '' : 'none';
   document.getElementById('pane-input').style.display = id === 'input' ? '' : 'none';
+  document.getElementById('periodBar').style.display  = id === 'list'  ? '' : 'none';
   if (id === 'list') renderList();
   if (id === 'input') { setToday('et_date'); onTypeChange(); }
 }

@@ -18,6 +18,13 @@
     <button class="segtab on" onclick="switchTab('list',this)">📋 현황</button>
     <button class="segtab" onclick="switchTab('input',this)">＋ 입력</button>
   </div>
+  <div class="period-filter" id="periodBar">
+    <button class="pf-btn" onclick="setPeriod(1,this)">이번달</button>
+    <button class="pf-btn" onclick="setPeriod(3,this)">3개월</button>
+    <button class="pf-btn" onclick="setPeriod(6,this)">6개월</button>
+    <button class="pf-btn" onclick="setPeriod(12,this)">1년</button>
+    <button class="pf-btn on" onclick="setPeriod(0,this)">전체</button>
+  </div>
 
   <!-- 입력 -->
   <div class="body" id="pane-input" style="display:none">
@@ -85,13 +92,6 @@
   <div class="body" id="pane-list">
     <div class="bp">
       <div id="maintUpcoming"></div>
-      <div style="display:flex;gap:5px;flex-wrap:wrap;padding:2px 0 6px;">
-        <button class="pf-btn" onclick="setPeriod(1,this)">이번달</button>
-        <button class="pf-btn" onclick="setPeriod(3,this)">3개월</button>
-        <button class="pf-btn" onclick="setPeriod(6,this)">6개월</button>
-        <button class="pf-btn" onclick="setPeriod(12,this)">1년</button>
-        <button class="pf-btn on" onclick="setPeriod(0,this)">전체</button>
-      </div>
       <div class="group-lbl">정비 이력</div>
       <div style="display:flex;flex-direction:column;gap:7px" id="maintList"></div>
     </div>
@@ -128,6 +128,7 @@ function switchTab(id, el) {
   el.classList.add('on');
   document.getElementById('pane-input').style.display = id === 'input' ? '' : 'none';
   document.getElementById('pane-list').style.display  = id === 'list'  ? '' : 'none';
+  document.getElementById('periodBar').style.display  = id === 'list'  ? '' : 'none';
   if (id === 'list') renderList();
 }
 
