@@ -504,10 +504,8 @@ function saveDriveEdit() {
   closeEditDrive(); renderList(); toast('수정됐습니다 ✓');
 }
 function deleteEditDrive() {
-  confirmDel('이 운행 기록을 삭제할까요?', () => {
-    delRec(document.getElementById('ed_id').value);
-    closeEditDrive(); renderList(); toast('삭제됐습니다');
-  });
+  delRec(document.getElementById('ed_id').value);
+  closeEditDrive(); renderList(); toast('삭제됐습니다');
 }
 
 function render() {

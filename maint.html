@@ -322,10 +322,8 @@ function saveMaintEdit() {
   closeEditMaint(); renderList(); toast('수정됐습니다 ✓');
 }
 function deleteEditMaint() {
-  confirmDel('이 정비 기록을 삭제할까요?', () => {
-    delRec(document.getElementById('em_id').value);
-    closeEditMaint(); renderList(); toast('삭제됐습니다');
-  });
+  delRec(document.getElementById('em_id').value);
+  closeEditMaint(); renderList(); toast('삭제됐습니다');
 }
 
 let _maintScanData = null;

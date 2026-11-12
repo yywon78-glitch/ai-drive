@@ -379,10 +379,8 @@ function saveEtcEdit() {
   closeEditEtc(); renderList(); toast('수정됐습니다 ✓');
 }
 function deleteEditEtc() {
-  confirmDel('이 기록을 삭제할까요?', () => {
-    delRec(document.getElementById('ete_id').value);
-    closeEditEtc(); renderList(); toast('삭제됐습니다');
-  });
+  delRec(document.getElementById('ete_id').value);
+  closeEditEtc(); renderList(); toast('삭제됐습니다');
 }
 
 function render() { renderVehicleSelect('vsel'); renderList(); }

@@ -306,10 +306,8 @@ function saveFuelEdit() {
   closeEditFuel(); renderList(); toast('수정됐습니다 ✓');
 }
 function deleteEditFuel() {
-  confirmDel('이 주유 기록을 삭제할까요?', () => {
-    delRec(document.getElementById('ef_id').value);
-    closeEditFuel(); renderList(); toast('삭제됐습니다');
-  });
+  delRec(document.getElementById('ef_id').value);
+  closeEditFuel(); renderList(); toast('삭제됐습니다');
 }
 
 function render() {
