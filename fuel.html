@@ -81,6 +81,30 @@
   <nav class="tabbar" id="tabbar"></nav>
 </div>
 
+<!-- 주유 수정 모달 -->
+<div class="moverlay" id="modal-edit-fuel" onclick="if(event.target===this)closeEditFuel()">
+  <div class="msheet">
+    <div class="m-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div class="m-title" style="margin-bottom:0">⛽ 주유 수정</div>
+      <button onclick="deleteEditFuel()" style="background:#fef2f2;color:var(--red);border:1.5px solid #fecaca;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;">삭제</button>
+    </div>
+    <div class="m-body">
+      <input type="hidden" id="ef_id">
+      <div class="m-row">
+        <div class="m-group"><label class="m-label">날짜 *</label><input type="date" class="m-input" id="ef_date"></div>
+        <div class="m-group"><label class="m-label">주행거리 (km)</label><input type="number" class="m-input" id="ef_mileage"></div>
+      </div>
+      <div class="m-row">
+        <div class="m-group"><label class="m-label">주유량 (L)</label><input type="number" class="m-input" id="ef_liters" step="0.1"></div>
+        <div class="m-group"><label class="m-label">단가 (원/L)</label><input type="number" class="m-input" id="ef_price"></div>
+      </div>
+      <div class="m-group"><label class="m-label">주유소</label><input type="text" class="m-input" id="ef_station"></div>
+      <button class="m-btn-primary" onclick="saveFuelEdit()">저장</button>
+    </div>
+  </div>
+</div>
+
 <script src="data.js?v=1"></script>
 <script src="nav.js?v=1"></script>
 <script>
@@ -198,8 +222,44 @@ function renderList() {
         <div class="rec-sub">${r.liters}L · ${numFmt(r.price)}원/L${r.effic>0?' · 연비 '+r.effic.toFixed(1)+'km/L':''}${r.station?' · '+r.station:''}</div>
       </div>
       <span class="rec-amt d-blue">${numFmt(r.amount)}원</span>
-      <span class="rec-del" onclick="confirmDel('이 주유 기록을 삭제할까요?', ()=>{delRec('${r.id}');renderList();toast('삭제됐습니다');})">🗑</span>
+      <span class="rec-del" style="color:var(--blue)" onclick="openEditFuel('${r.id}')">✏️</span>
     </div>`).join('');
+}
+
+function openEditFuel(id) {
+  const r = getRecs('fuel').find(x => x.id === id); if (!r) return;
+  document.getElementById('ef_id').value      = id;
+  document.getElementById('ef_date').value    = r.date;
+  document.getElementById('ef_mileage').value = r.mileage || '';
+  document.getElementById('ef_liters').value  = r.liters  || '';
+  document.getElementById('ef_price').value   = r.price   || '';
+  document.getElementById('ef_station').value = r.station || '';
+  document.getElementById('modal-edit-fuel').classList.add('show');
+}
+function closeEditFuel() { document.getElementById('modal-edit-fuel').classList.remove('show'); }
+function saveFuelEdit() {
+  const id = document.getElementById('ef_id').value;
+  const v  = getV(); if (!v) return;
+  const k  = 'recs_' + v.id;
+  const recs = DB.get(k, []);
+  const idx  = recs.findIndex(x => x.id === id); if (idx < 0) return;
+  const liters = +document.getElementById('ef_liters').value;
+  const price  = +document.getElementById('ef_price').value;
+  recs[idx] = { ...recs[idx],
+    date:    document.getElementById('ef_date').value,
+    mileage: +document.getElementById('ef_mileage').value || 0,
+    liters, price,
+    amount:  liters && price ? Math.round(liters * price) : recs[idx].amount,
+    station: document.getElementById('ef_station').value.trim()
+  };
+  DB.set(k, recs);
+  closeEditFuel(); renderList(); toast('수정됐습니다 ✓');
+}
+function deleteEditFuel() {
+  confirmDel('이 주유 기록을 삭제할까요?', () => {
+    delRec(document.getElementById('ef_id').value);
+    closeEditFuel(); renderList(); toast('삭제됐습니다');
+  });
 }
 
 function render() {

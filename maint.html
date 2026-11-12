@@ -100,6 +100,52 @@
   <nav class="tabbar" id="tabbar"></nav>
 </div>
 
+<!-- 정비 수정 모달 -->
+<div class="moverlay" id="modal-edit-maint" onclick="if(event.target===this)closeEditMaint()">
+  <div class="msheet">
+    <div class="m-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div class="m-title" style="margin-bottom:0">🔧 정비 수정</div>
+      <button onclick="deleteEditMaint()" style="background:#fef2f2;color:var(--red);border:1.5px solid #fecaca;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;">삭제</button>
+    </div>
+    <div class="m-body">
+      <input type="hidden" id="em_id">
+      <div class="m-row">
+        <div class="m-group"><label class="m-label">날짜</label><input type="date" class="m-input" id="em_date"></div>
+        <div class="m-group"><label class="m-label">주행거리 (km)</label><input type="number" class="m-input" id="em_mileage"></div>
+      </div>
+      <div class="m-group">
+        <label class="m-label">정비 항목</label>
+        <select class="m-select" id="em_category">
+          <option value="engine_oil">엔진오일 (합성유)</option>
+          <option value="engine_oil_basic">엔진오일 (일반유)</option>
+          <option value="air_filter">에어클리너</option>
+          <option value="cabin_filter">에어컨 필터</option>
+          <option value="tire_rotation">타이어 로테이션</option>
+          <option value="tire_replace">타이어 교체</option>
+          <option value="brake">브레이크 패드</option>
+          <option value="coolant">냉각수</option>
+          <option value="spark_plug">점화플러그</option>
+          <option value="battery">배터리</option>
+          <option value="exterior">외관</option>
+          <option value="tax">세금/검사</option>
+          <option value="other">기타</option>
+        </select>
+      </div>
+      <div class="m-row">
+        <div class="m-group"><label class="m-label">금액 (원)</label><input type="number" class="m-input" id="em_amount"></div>
+        <div class="m-group"><label class="m-label">정비소</label><input type="text" class="m-input" id="em_shop"></div>
+      </div>
+      <div class="m-row">
+        <div class="m-group"><label class="m-label">다음 예정일</label><input type="date" class="m-input" id="em_next_date"></div>
+        <div class="m-group"><label class="m-label">다음 예정 km</label><input type="number" class="m-input" id="em_next_km"></div>
+      </div>
+      <div class="m-group"><label class="m-label">메모</label><input type="text" class="m-input" id="em_memo"></div>
+      <button class="m-btn-primary" onclick="saveMaintEdit()">저장</button>
+    </div>
+  </div>
+</div>
+
 <script src="data.js?v=1"></script>
 <script src="nav.js?v=1"></script>
 <script>
@@ -224,9 +270,49 @@ function renderList() {
         <div class="rec-sub">${r.date}${r.shop?' · '+r.shop:''}${r.mileage?' · '+numFmt(r.mileage)+'km':''}${r.nextDate?' · 다음 '+r.nextDate:''}</div>
       </div>
       <span class="rec-amt d-orange">${numFmt(r.amount)}원</span>
-      <span class="rec-del" onclick="confirmDel('이 정비 기록을 삭제할까요?', ()=>{delRec('${r.id}');renderList();toast('삭제됐습니다');})">🗑</span>
+      <span class="rec-del" style="color:var(--blue)" onclick="openEditMaint('${r.id}')">✏️</span>
     </div>`;
   }).join('');
+}
+
+function openEditMaint(id) {
+  const r = getRecs('maint').find(x => x.id === id); if (!r) return;
+  document.getElementById('em_id').value        = id;
+  document.getElementById('em_date').value      = r.date;
+  document.getElementById('em_mileage').value   = r.mileage   || '';
+  document.getElementById('em_category').value  = r.category  || '';
+  document.getElementById('em_amount').value    = r.amount    || '';
+  document.getElementById('em_shop').value      = r.shop      || '';
+  document.getElementById('em_next_date').value = r.nextDate  || '';
+  document.getElementById('em_next_km').value   = r.nextKm    || '';
+  document.getElementById('em_memo').value      = r.memo      || '';
+  document.getElementById('modal-edit-maint').classList.add('show');
+}
+function closeEditMaint() { document.getElementById('modal-edit-maint').classList.remove('show'); }
+function saveMaintEdit() {
+  const id = document.getElementById('em_id').value;
+  const v  = getV(); if (!v) return;
+  const k  = 'recs_' + v.id;
+  const recs = DB.get(k, []);
+  const idx  = recs.findIndex(x => x.id === id); if (idx < 0) return;
+  recs[idx] = { ...recs[idx],
+    date:     document.getElementById('em_date').value,
+    mileage:  +document.getElementById('em_mileage').value  || 0,
+    category: document.getElementById('em_category').value,
+    amount:   +document.getElementById('em_amount').value   || 0,
+    shop:     document.getElementById('em_shop').value.trim(),
+    nextDate: document.getElementById('em_next_date').value,
+    nextKm:   +document.getElementById('em_next_km').value  || 0,
+    memo:     document.getElementById('em_memo').value.trim()
+  };
+  DB.set(k, recs);
+  closeEditMaint(); renderList(); toast('수정됐습니다 ✓');
+}
+function deleteEditMaint() {
+  confirmDel('이 정비 기록을 삭제할까요?', () => {
+    delRec(document.getElementById('em_id').value);
+    closeEditMaint(); renderList(); toast('삭제됐습니다');
+  });
 }
 
 function render() {

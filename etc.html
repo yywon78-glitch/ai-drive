@@ -122,6 +122,47 @@
   <nav class="tabbar" id="tabbar"></nav>
 </div>
 
+<!-- 기타지출 수정 모달 -->
+<div class="moverlay" id="modal-edit-etc" onclick="if(event.target===this)closeEditEtc()">
+  <div class="msheet">
+    <div class="m-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div class="m-title" style="margin-bottom:0" id="ete_title">수정</div>
+      <button onclick="deleteEditEtc()" style="background:#fef2f2;color:var(--red);border:1.5px solid #fecaca;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;">삭제</button>
+    </div>
+    <div class="m-body">
+      <input type="hidden" id="ete_id">
+      <input type="hidden" id="ete_type">
+      <div class="m-row">
+        <div class="m-group"><label class="m-label">날짜</label><input type="date" class="m-input" id="ete_date"></div>
+        <div class="m-group"><label class="m-label">금액 (원)</label><input type="number" class="m-input" id="ete_amount"></div>
+      </div>
+      <!-- 하이패스 전용 -->
+      <div id="ete-hi">
+        <div class="m-group"><label class="m-label">충전소</label><input type="text" class="m-input" id="ete_place"></div>
+      </div>
+      <!-- 보험·세금 전용 -->
+      <div id="ete-ins" style="display:none">
+        <div class="m-group"><label class="m-label">세부 종류</label>
+          <select class="m-select" id="ete_instype">
+            <option value="car_insurance">자동차보험</option><option value="car_tax">자동차세</option>
+            <option value="parking">주차비</option><option value="other">기타</option>
+          </select>
+        </div>
+        <div class="m-row">
+          <div class="m-group"><label class="m-label">만기일</label><input type="date" class="m-input" id="ete_expiry"></div>
+          <div class="m-group"><label class="m-label">메모</label><input type="text" class="m-input" id="ete_memo"></div>
+        </div>
+      </div>
+      <!-- 기타 전용 -->
+      <div id="ete-oth" style="display:none">
+        <div class="m-group"><label class="m-label">내용</label><input type="text" class="m-input" id="ete_desc"></div>
+      </div>
+      <button class="m-btn-primary" onclick="saveEtcEdit()">저장</button>
+    </div>
+  </div>
+</div>
+
 <script src="data.js?v=4"></script>
 <script src="nav.js?v=4"></script>
 <script>
@@ -183,7 +224,7 @@ function renderList() {
           <div class="rec-title">충전 · ${r.date}${r.place?' · '+r.place:''}</div>
           <div class="rec-sub">+${numFmt(r.amount)}원 → 잔액 ${numFmt(r.balance)}원</div>
         </div>
-        <span class="rec-del" onclick="confirmDel('삭제할까요?',()=>{delRec('${r.id}');renderList();toast('삭제됐습니다');})">🗑</span>
+        <span class="rec-del" style="color:var(--blue)" onclick="openEditEtc('${r.id}','${r.type}')">✏️</span>
       </div>`;
     if (r.type === 'insurance') return `
       <div class="rec-row">
@@ -193,7 +234,7 @@ function renderList() {
           <div class="rec-sub">${r.expiry?'만기: '+r.expiry+' ':''}${r.memo||''}</div>
         </div>
         <span class="rec-amt d-orange">${numFmt(r.amount)}원</span>
-        <span class="rec-del" onclick="confirmDel('삭제할까요?',()=>{delRec('${r.id}');renderList();toast('삭제됐습니다');})">🗑</span>
+        <span class="rec-del" style="color:var(--blue)" onclick="openEditEtc('${r.id}','${r.type}')">✏️</span>
       </div>`;
     return `
       <div class="rec-row">
@@ -203,7 +244,7 @@ function renderList() {
           <div class="rec-sub">${r.date}</div>
         </div>
         <span class="rec-amt">${numFmt(r.amount)}원</span>
-        <span class="rec-del" onclick="confirmDel('삭제할까요?',()=>{delRec('${r.id}');renderList();toast('삭제됐습니다');})">🗑</span>
+        <span class="rec-del" style="color:var(--blue)" onclick="openEditEtc('${r.id}','${r.type}')">✏️</span>
       </div>`;
   }).join('');
 }
@@ -250,6 +291,53 @@ function saveEtc() {
   document.getElementById('et_hibalance').value = '';
   toast('저장됐습니다 ✓');
   switchTab('list', document.querySelectorAll('.segtab')[0]);
+}
+
+function openEditEtc(id, type) {
+  const r = getRecs(type).find(x => x.id === id); if (!r) return;
+  document.getElementById('ete_id').value    = id;
+  document.getElementById('ete_type').value  = type;
+  document.getElementById('ete_date').value  = r.date;
+  document.getElementById('ete_amount').value = r.amount || '';
+  const titles = {hipass:'⚡ 하이패스 충전 수정', insurance:'🛡 보험·세금 수정', other:'💸 기타 지출 수정'};
+  document.getElementById('ete_title').textContent = titles[type] || '수정';
+  document.getElementById('ete-hi').style.display  = type === 'hipass'    ? '' : 'none';
+  document.getElementById('ete-ins').style.display = type === 'insurance' ? '' : 'none';
+  document.getElementById('ete-oth').style.display = type === 'other'     ? '' : 'none';
+  if (type === 'hipass')    document.getElementById('ete_place').value   = r.place   || '';
+  if (type === 'insurance') {
+    document.getElementById('ete_instype').value = r.insType || 'car_insurance';
+    document.getElementById('ete_expiry').value  = r.expiry  || '';
+    document.getElementById('ete_memo').value    = r.memo    || '';
+  }
+  if (type === 'other') document.getElementById('ete_desc').value = r.desc || '';
+  document.getElementById('modal-edit-etc').classList.add('show');
+}
+function closeEditEtc() { document.getElementById('modal-edit-etc').classList.remove('show'); }
+function saveEtcEdit() {
+  const id   = document.getElementById('ete_id').value;
+  const type = document.getElementById('ete_type').value;
+  const v    = getV(); if (!v) return;
+  const k    = 'recs_' + v.id;
+  const recs = DB.get(k, []);
+  const idx  = recs.findIndex(x => x.id === id); if (idx < 0) return;
+  recs[idx]  = { ...recs[idx],
+    date:   document.getElementById('ete_date').value,
+    amount: +document.getElementById('ete_amount').value || 0,
+    ...(type==='hipass'    ? {place:   document.getElementById('ete_place').value.trim()} : {}),
+    ...(type==='insurance' ? {insType: document.getElementById('ete_instype').value,
+                               expiry:  document.getElementById('ete_expiry').value,
+                               memo:    document.getElementById('ete_memo').value.trim()} : {}),
+    ...(type==='other'     ? {desc:    document.getElementById('ete_desc').value.trim()} : {})
+  };
+  DB.set(k, recs);
+  closeEditEtc(); renderList(); toast('수정됐습니다 ✓');
+}
+function deleteEditEtc() {
+  confirmDel('이 기록을 삭제할까요?', () => {
+    delRec(document.getElementById('ete_id').value);
+    closeEditEtc(); renderList(); toast('삭제됐습니다');
+  });
 }
 
 function render() { renderVehicleSelect('vsel'); renderList(); }
