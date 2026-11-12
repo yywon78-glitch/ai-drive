@@ -15,12 +15,12 @@
   </header>
 
   <div class="segtabs" id="segtabs">
-    <button class="segtab on" onclick="switchTab('input',this)">＋ 입력</button>
-    <button class="segtab" onclick="switchTab('list',this)">📋 현황</button>
+    <button class="segtab" onclick="switchTab('input',this)">＋ 입력</button>
+    <button class="segtab on" onclick="switchTab('list',this)">📋 현황</button>
   </div>
 
   <!-- 입력 탭 -->
-  <div class="body" id="pane-input">
+  <div class="body" id="pane-input" style="display:none">
     <div class="bp">
       <div class="m-card form">
         <div class="m-row">
@@ -63,7 +63,7 @@
   </div>
 
   <!-- 현황 탭 -->
-  <div class="body" id="pane-list" style="display:none">
+  <div class="body" id="pane-list">
     <div class="bp">
       <div class="m-card" id="fuelStat"></div>
       <div class="group-lbl">기록 목록</div>
@@ -81,6 +81,7 @@ renderTabBar('fuel');
 renderVehicleSelect('vsel');
 setToday('f_date');
 prefillMileage();
+renderList();
 
 function prefillMileage() {
   const fuel = getRecs('fuel');

@@ -15,12 +15,12 @@
   </header>
 
   <div class="segtabs">
-    <button class="segtab on" onclick="switchTab('input',this)">＋ 입력</button>
-    <button class="segtab" onclick="switchTab('list',this)">📋 현황</button>
+    <button class="segtab" onclick="switchTab('input',this)">＋ 입력</button>
+    <button class="segtab on" onclick="switchTab('list',this)">📋 현황</button>
   </div>
 
   <!-- 입력 -->
-  <div class="body" id="pane-input">
+  <div class="body" id="pane-input" style="display:none">
     <div class="bp">
       <div class="m-card form">
         <div class="m-row">
@@ -82,7 +82,7 @@
   </div>
 
   <!-- 현황 -->
-  <div class="body" id="pane-list" style="display:none">
+  <div class="body" id="pane-list">
     <div class="bp">
       <div id="maintUpcoming"></div>
       <div class="group-lbl">정비 이력</div>
@@ -99,6 +99,7 @@
 renderTabBar('maint');
 renderVehicleSelect('vsel');
 setToday('m_date');
+renderList();
 
 function switchTab(id, el) {
   document.querySelectorAll('.segtab').forEach(b => b.classList.remove('on'));

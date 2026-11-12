@@ -15,13 +15,13 @@
   </header>
 
   <div class="segtabs">
-    <button class="segtab on" onclick="switchTab('input',this)">＋ 입력</button>
-    <button class="segtab" onclick="switchTab('list',this)">📋 현황</button>
+    <button class="segtab" onclick="switchTab('input',this)">＋ 입력</button>
+    <button class="segtab on" onclick="switchTab('list',this)">📋 현황</button>
     <button class="segtab" onclick="switchTab('tl',this)">🗺 타임라인</button>
   </div>
 
   <!-- 입력 -->
-  <div class="body" id="pane-input">
+  <div class="body" id="pane-input" style="display:none">
     <div class="bp">
       <div class="m-card form">
         <div class="m-row">
@@ -86,7 +86,7 @@
   </div>
 
   <!-- 현황 -->
-  <div class="body" id="pane-list" style="display:none">
+  <div class="body" id="pane-list">
     <div class="bp">
       <div class="m-card" id="driveStat"></div>
       <div class="group-lbl">운행 목록</div>
@@ -155,6 +155,7 @@ renderTabBar('drive');
 renderVehicleSelect('vsel');
 setToday('d_date');
 fillLastKm();
+renderList();
 
 function fillLastKm() {
   const dr = getRecs('drive');
