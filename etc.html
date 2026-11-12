@@ -29,20 +29,6 @@
   <!-- 현황 -->
   <div class="body" id="pane-list">
     <div class="bp">
-      <!-- 하이패스 잔액 카드 (전체/하이패스 필터일 때) -->
-      <div id="hipassBalCard" style="display:none">
-        <div class="hipass-card">
-          <div>
-            <div class="hb-label">하이패스 현재 잔액</div>
-            <div class="hb-amount" id="hipassAmt">0원</div>
-          </div>
-          <div style="text-align:right">
-            <div style="font-size:10px;opacity:.7">최근 충전</div>
-            <div style="font-size:12px" id="hipassLast">-</div>
-          </div>
-        </div>
-      </div>
-
       <!-- 종류 필터 -->
       <div class="pills" style="border-bottom:none;padding:4px 0 4px;">
         <div class="pill on"  id="pf-all"  onclick="setFilter('all',this)">전체</div>
@@ -183,17 +169,6 @@ function renderList() {
   recs.sort((a,b) => b.date.localeCompare(a.date));
   /* 종류 필터 */
   if (_etcFilter !== 'all') recs = recs.filter(r => r.type === _etcFilter);
-
-  /* 하이패스 잔액 카드 */
-  const showBal = _etcFilter === 'all' || _etcFilter === 'hipass';
-  const hipassCard = document.getElementById('hipassBalCard');
-  hipassCard.style.display = showBal ? '' : 'none';
-  if (showBal) {
-    const hiRecs = getRecs('hipass');
-    const bal = hiRecs.length ? (hiRecs[0].balance || 0) : 0;
-    document.getElementById('hipassAmt').textContent  = numFmt(bal) + '원';
-    document.getElementById('hipassLast').textContent = hiRecs.length ? hiRecs[0].date + ' · +' + numFmt(hiRecs[0].amount) : '-';
-  }
 
   const list = document.getElementById('etcList');
   if (!recs.length) {
