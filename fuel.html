@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>주유 — 스마트 차계부</title>
+<link rel="stylesheet" href="shared.css?v=1">
+</head>
+<body>
+<div class="page">
+
+  <header class="hdr">
+    <span class="hdr-t">⛽ 주유 기록</span>
+    <select class="v-sel-light" id="vsel" onchange="onVehicleChange('vsel')"></select>
+  </header>
+
+  <div class="segtabs" id="segtabs">
+    <button class="segtab on" onclick="switchTab('input',this)">＋ 입력</button>
+    <button class="segtab" onclick="switchTab('list',this)">📋 현황</button>
+  </div>
+
+  <!-- 입력 탭 -->
+  <div class="body" id="pane-input">
+    <div class="bp">
+      <div class="m-card form">
+        <div class="m-row">
+          <div class="m-group">
+            <label class="m-label">날짜 *</label>
+            <input type="date" class="m-input" id="f_date">
+          </div>
+          <div class="m-group">
+            <label class="m-label">주행거리 (km) *</label>
+            <input type="number" class="m-input" id="f_mileage" placeholder="66700" oninput="calcFuel()">
+          </div>
+        </div>
+        <div class="m-row">
+          <div class="m-group">
+            <label class="m-label">주유량 (L) *</label>
+            <input type="number" class="m-input" id="f_liters" placeholder="55.3" step="0.1" oninput="calcFuel()">
+          </div>
+          <div class="m-group">
+            <label class="m-label">단가 (원/L) *</label>
+            <input type="number" class="m-input" id="f_price" placeholder="1650" oninput="calcFuel()">
+          </div>
+        </div>
+        <div class="m-row">
+          <div class="m-group">
+            <label class="m-label">금액 (자동계산)</label>
+            <input type="text" class="m-input auto" id="f_amount" readonly placeholder="자동">
+          </div>
+          <div class="m-group">
+            <label class="m-label">연비 (자동계산)</label>
+            <input type="text" class="m-input auto" id="f_effic" readonly placeholder="자동">
+          </div>
+        </div>
+        <div class="m-group">
+          <label class="m-label">주유소</label>
+          <input type="text" class="m-input" id="f_station" placeholder="선택 사항">
+        </div>
+        <button class="m-btn primary" onclick="saveFuel()">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 현황 탭 -->
+  <div class="body" id="pane-list" style="display:none">
+    <div class="bp">
+      <div class="m-card" id="fuelStat"></div>
+      <div class="group-lbl">기록 목록</div>
+      <div style="display:flex;flex-direction:column;gap:7px" id="fuelList"></div>
+    </div>
+  </div>
+
+  <nav class="tabbar" id="tabbar"></nav>
+</div>
+
+<script src="data.js?v=1"></script>
+<script src="nav.js?v=1"></script>
+<script>
+renderTabBar('fuel');
+renderVehicleSelect('vsel');
+setToday('f_date');
+prefillMileage();
+
+function prefillMileage() {
+  const fuel = getRecs('fuel');
+  if (fuel.length && fuel[0].mileage) {
+    // 이전 최고 주행거리 미리채움 안 함 (입력 혼동 방지, 플레이스홀더만)
+  }
+}
+
+function switchTab(id, el) {
+  document.querySelectorAll('.segtab').forEach(b => b.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById('pane-input').style.display = id === 'input' ? '' : 'none';
+  document.getElementById('pane-list').style.display  = id === 'list'  ? '' : 'none';
+  if (id === 'list') renderList();
+}
+
+function calcFuel() {
+  const L = +document.getElementById('f_liters').value;
+  const P = +document.getElementById('f_price').value;
+  const km = +document.getElementById('f_mileage').value;
+  document.getElementById('f_amount').value = (L && P) ? numFmt(Math.round(L*P)) + '원' : '';
+  const prev = getRecs('fuel');
+  if (L && km && prev.length && prev[0].mileage) {
+    const e = (km - prev[0].mileage) / L;
+    document.getElementById('f_effic').value = e > 0 ? e.toFixed(1) + ' km/L' : '';
+  } else {
+    document.getElementById('f_effic').value = '';
+  }
+}
+
+function saveFuel() {
+  const date    = document.getElementById('f_date').value;
+  const mileage = +document.getElementById('f_mileage').value;
+  const liters  = +document.getElementById('f_liters').value;
+  const price   = +document.getElementById('f_price').value;
+  if (!date || !mileage || !liters || !price) {
+    toast('날짜, 주행거리, 주유량, 단가를 입력해주세요');
+    return;
+  }
+  const prev  = getRecs('fuel');
+  const effic = prev.length && prev[0].mileage ? (mileage - prev[0].mileage) / liters : 0;
+  addRec({
+    id: DB.uid(), type:'fuel',
+    date, mileage, liters, price,
+    amount: Math.round(liters * price),
+    effic: effic > 0 ? +effic.toFixed(2) : 0,
+    station: document.getElementById('f_station').value.trim()
+  });
+  updateVehicleMileage(mileage);
+  ['f_mileage','f_liters','f_price','f_station','f_amount','f_effic'].forEach(id => document.getElementById(id).value = '');
+  toast('주유 기록이 저장됐습니다 ✓');
+  switchTab('list', document.querySelectorAll('.segtab')[1]);
+}
+
+function renderList() {
+  const recs = getRecs('fuel');
+  const totAmt = recs.reduce((s,r) => s+r.amount, 0);
+  const totL   = recs.reduce((s,r) => s+r.liters, 0);
+  const effs   = recs.filter(r => r.effic > 0);
+  const avgE   = effs.length ? effs.reduce((s,r) => s+r.effic, 0) / effs.length : 0;
+
+  document.getElementById('fuelStat').innerHTML = `
+    <div class="m-row3" style="text-align:center">
+      <div>
+        <div class="d-label">총 주유비</div>
+        <div class="d-value d-blue" style="font-size:17px">${numFmt(totAmt)}</div>
+        <div class="d-unit">원</div>
+      </div>
+      <div>
+        <div class="d-label">총 주유량</div>
+        <div class="d-value d-sky" style="font-size:17px">${totL.toFixed(1)}</div>
+        <div class="d-unit">L</div>
+      </div>
+      <div>
+        <div class="d-label">평균 연비</div>
+        <div class="d-value d-green" style="font-size:17px">${avgE ? avgE.toFixed(1) : '-'}</div>
+        <div class="d-unit">km/L</div>
+      </div>
+    </div>`;
+
+  const list = document.getElementById('fuelList');
+  if (!recs.length) {
+    list.innerHTML = `<div class="empty"><span class="empty-ic">⛽</span><div class="empty-t">주유 기록이 없습니다</div></div>`;
+    return;
+  }
+  list.innerHTML = recs.map(r => `
+    <div class="rec-row">
+      <span class="rec-badge b-fuel">주유</span>
+      <div class="rec-main">
+        <div class="rec-title">${r.date} · ${numFmt(r.mileage)}km</div>
+        <div class="rec-sub">${r.liters}L · ${numFmt(r.price)}원/L${r.effic>0?' · 연비 '+r.effic.toFixed(1)+'km/L':''}${r.station?' · '+r.station:''}</div>
+      </div>
+      <span class="rec-amt d-blue">${numFmt(r.amount)}원</span>
+      <span class="rec-del" onclick="confirmDel('이 주유 기록을 삭제할까요?', ()=>{delRec('${r.id}');renderList();toast('삭제됐습니다');})">🗑</span>
+    </div>`).join('');
+}
+
+function render() {
+  renderVehicleSelect('vsel');
+  const activeTab = document.querySelector('.segtab.on');
+  if (activeTab && activeTab.textContent.includes('현황')) renderList();
+}
+</script>
+</body>
+</html>

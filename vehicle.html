@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>차량 관리 — 스마트 차계부</title>
+<link rel="stylesheet" href="shared.css?v=1">
+</head>
+<body>
+<div class="page">
+
+  <header class="hdr">
+    <button class="hdr-back" onclick="history.back()">←</button>
+    <span class="hdr-t">🚗 차량 관리</span>
+  </header>
+
+  <div class="body">
+    <div class="bp">
+
+      <!-- 차량 목록 -->
+      <div class="group-lbl">등록된 차량</div>
+      <div style="display:flex;flex-direction:column;gap:8px" id="vehicleList"></div>
+
+      <!-- 신규 차량 등록 폼 -->
+      <div class="group-lbl" style="margin-top:4px">새 차량 등록</div>
+      <div class="m-card form" id="regForm">
+        <div class="m-row">
+          <div class="m-group">
+            <label class="m-label">차량번호 *</label>
+            <input type="text" class="m-input" id="v_plate" placeholder="123가 4567">
+          </div>
+          <div class="m-group">
+            <label class="m-label">연식</label>
+            <input type="number" class="m-input" id="v_year" placeholder="2022">
+          </div>
+        </div>
+        <div class="m-group">
+          <label class="m-label">차량명 *</label>
+          <input type="text" class="m-input" id="v_name" placeholder="그랜저 IG">
+        </div>
+        <div class="m-row">
+          <div class="m-group">
+            <label class="m-label">연료 종류</label>
+            <select class="m-select" id="v_fuel">
+              <option value="gasoline">휘발유</option>
+              <option value="diesel">경유</option>
+              <option value="lpg">LPG</option>
+              <option value="ev">전기</option>
+              <option value="hybrid">하이브리드</option>
+            </select>
+          </div>
+          <div class="m-group">
+            <label class="m-label">탱크 용량 (L)</label>
+            <input type="number" class="m-input" id="v_tank" placeholder="60">
+          </div>
+        </div>
+        <div class="m-row">
+          <div class="m-group">
+            <label class="m-label">보험 만기일</label>
+            <input type="date" class="m-input" id="v_insurance">
+          </div>
+          <div class="m-group">
+            <label class="m-label">정기검사 만기</label>
+            <input type="date" class="m-input" id="v_inspect">
+          </div>
+        </div>
+        <div class="m-group">
+          <label class="m-label">현재 주행거리 (km)</label>
+          <input type="number" class="m-input" id="v_mileage" placeholder="66700">
+        </div>
+        <button class="m-btn primary" onclick="saveVehicle()">차량 등록</button>
+      </div>
+
+      <div style="height:8px"></div>
+    </div>
+  </div>
+
+  <!-- 차량 편집 모달 -->
+  <div class="moverlay" id="editModal" onclick="if(event.target===this)closeEdit()">
+    <div class="msheet">
+      <div class="m-handle"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div class="m-title" style="margin-bottom:0">차량 편집</div>
+        <button onclick="confirmDel('이 차량과 모든 기록을 삭제할까요?\n(되돌릴 수 없습니다)', doDeleteVehicle)" style="background:var(--red-lt);color:var(--red);border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer">삭제</button>
+      </div>
+      <div class="m-body">
+        <input type="hidden" id="e_vid">
+        <div class="m-row">
+          <div class="m-group">
+            <div class="m-label">차량번호</div>
+            <input type="text" class="finp" id="e_plate" style="width:100%;padding:10px 12px;border-radius:9px;background:var(--bg);border:1.5px solid var(--bdr);font-size:14px;color:var(--t1);outline:none;">
+          </div>
+          <div class="m-group">
+            <div class="m-label">연식</div>
+            <input type="number" class="finp" id="e_year" style="width:100%;padding:10px 12px;border-radius:9px;background:var(--bg);border:1.5px solid var(--bdr);font-size:14px;color:var(--t1);outline:none;">
+          </div>
+        </div>
+        <div class="m-group">
+          <div class="m-label">차량명</div>
+          <input type="text" class="finp" id="e_name" style="width:100%;padding:10px 12px;border-radius:9px;background:var(--bg);border:1.5px solid var(--bdr);font-size:14px;color:var(--t1);outline:none;">
+        </div>
+        <div class="m-row">
+          <div class="m-group">
+            <div class="m-label">연료 종류</div>
+            <select id="e_fuel" style="width:100%;padding:10px 12px;border-radius:9px;background:var(--bg);border:1.5px solid var(--bdr);font-size:14px;color:var(--t1);outline:none;">
+              <option value="gasoline">휘발유</option>
+              <option value="diesel">경유</option>
+              <option value="lpg">LPG</option>
+              <option value="ev">전기</option>
+              <option value="hybrid">하이브리드</option>
+            </select>
+          </div>
+          <div class="m-group">
+            <div class="m-label">탱크 용량 (L)</div>
+            <input type="number" id="e_tank" style="width:100%;padding:10px 12px;border-radius:9px;background:var(--bg);border:1.5px solid var(--bdr);font-size:14px;color:var(--t1);outline:none;">
+          </div>
+        </div>
+        <div class="m-row">
+          <div class="m-group">
+            <div class="m-label">보험 만기일</div>
+            <input type="date" id="e_insurance" style="width:100%;padding:10px 12px;border-radius:9px;background:var(--bg);border:1.5px solid var(--bdr);font-size:14px;color:var(--t1);outline:none;">
+          </div>
+          <div class="m-group">
+            <div class="m-label">정기검사 만기</div>
+            <input type="date" id="e_inspect" style="width:100%;padding:10px 12px;border-radius:9px;background:var(--bg);border:1.5px solid var(--bdr);font-size:14px;color:var(--t1);outline:none;">
+          </div>
+        </div>
+        <div class="m-group">
+          <div class="m-label">현재 주행거리 (km)</div>
+          <input type="number" id="e_mileage" style="width:100%;padding:10px 12px;border-radius:9px;background:var(--bg);border:1.5px solid var(--bdr);font-size:14px;color:var(--t1);outline:none;">
+        </div>
+        <button class="m-btn-primary" onclick="saveEdit()">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <nav class="tabbar" id="tabbar"></nav>
+</div>
+
+<script src="data.js?v=1"></script>
+<script src="nav.js?v=1"></script>
+<script>
+renderTabBar('home');
+
+const FUEL_LABEL = { gasoline:'휘발유', diesel:'경유', lpg:'LPG', ev:'전기', hybrid:'하이브리드' };
+
+function render() {
+  const vs  = getVehicles();
+  const vid = getCurrentVid();
+  const list = document.getElementById('vehicleList');
+  if (!vs.length) {
+    list.innerHTML = `<div class="empty"><span class="empty-ic">🚗</span><div class="empty-t">등록된 차량이 없습니다</div><div class="empty-s">아래 폼에서 차량을 등록해 주세요</div></div>`;
+    return;
+  }
+  list.innerHTML = vs.map(v => `
+    <div class="vehicle-row${v.id===vid?' active-v':''}" onclick="openEdit('${v.id}')">
+      <div class="v-icon">🚗</div>
+      <div class="v-info">
+        <div class="v-name">${v.name}</div>
+        <div class="v-plate">${v.plateNo} · ${v.year||''}년식 · ${FUEL_LABEL[v.fuelType]||v.fuelType} · ${numFmt(v.mileage)}km</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:2px">
+          ${v.insurance ? `보험 만기: ${v.insurance}` : ''}
+          ${v.inspect   ? ` · 검사 만기: ${v.inspect}` : ''}
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
+        ${v.id===vid ? `<span style="font-size:11px;font-weight:700;color:var(--blue);background:var(--blue-lt);padding:3px 8px;border-radius:8px">사용중</span>` : `<button onclick="event.stopPropagation();selectVehicle('${v.id}')" style="font-size:11px;font-weight:700;color:var(--t2);background:var(--bg);border:1.5px solid var(--bdr);padding:3px 8px;border-radius:8px;cursor:pointer">선택</button>`}
+        <span class="v-arrow">›</span>
+      </div>
+    </div>`).join('');
+}
+
+function selectVehicle(id) {
+  setCurrentVid(id);
+  render();
+  toast('차량이 선택됐습니다 ✓');
+}
+
+function saveVehicle() {
+  const name  = document.getElementById('v_name').value.trim();
+  const plate = document.getElementById('v_plate').value.trim();
+  if (!name || !plate) { toast('차량명과 차량번호는 필수입니다'); return; }
+  const v = {
+    id:        DB.uid(),
+    name, plateNo:plate,
+    year:      document.getElementById('v_year').value,
+    fuelType:  document.getElementById('v_fuel').value,
+    tank:      +document.getElementById('v_tank').value || 0,
+    insurance: document.getElementById('v_insurance').value,
+    inspect:   document.getElementById('v_inspect').value,
+    mileage:   +document.getElementById('v_mileage').value || 0
+  };
+  const vs = getVehicles();
+  vs.push(v);
+  setVehicles(vs);
+  if (!getCurrentVid()) setCurrentVid(v.id);
+  ['v_name','v_plate','v_year','v_tank','v_mileage','v_insurance','v_inspect'].forEach(id => document.getElementById(id).value = '');
+  render();
+  toast(`${v.name} 차량이 등록됐습니다 ✓`);
+}
+
+function openEdit(id) {
+  const v = getVehicles().find(x => x.id === id);
+  if (!v) return;
+  document.getElementById('e_vid').value       = v.id;
+  document.getElementById('e_name').value      = v.name;
+  document.getElementById('e_plate').value     = v.plateNo;
+  document.getElementById('e_year').value      = v.year || '';
+  document.getElementById('e_fuel').value      = v.fuelType || 'gasoline';
+  document.getElementById('e_tank').value      = v.tank || '';
+  document.getElementById('e_insurance').value = v.insurance || '';
+  document.getElementById('e_inspect').value   = v.inspect || '';
+  document.getElementById('e_mileage').value   = v.mileage || '';
+  document.getElementById('editModal').classList.add('show');
+}
+
+function closeEdit() {
+  document.getElementById('editModal').classList.remove('show');
+}
+
+function saveEdit() {
+  const id   = document.getElementById('e_vid').value;
+  const name = document.getElementById('e_name').value.trim();
+  if (!name) { toast('차량명을 입력해주세요'); return; }
+  const vs  = getVehicles();
+  const idx = vs.findIndex(x => x.id === id);
+  if (idx < 0) return;
+  vs[idx] = {
+    ...vs[idx],
+    name,
+    plateNo:   document.getElementById('e_plate').value.trim(),
+    year:      document.getElementById('e_year').value,
+    fuelType:  document.getElementById('e_fuel').value,
+    tank:      +document.getElementById('e_tank').value || 0,
+    insurance: document.getElementById('e_insurance').value,
+    inspect:   document.getElementById('e_inspect').value,
+    mileage:   +document.getElementById('e_mileage').value || 0
+  };
+  setVehicles(vs);
+  closeEdit();
+  render();
+  toast('차량 정보가 저장됐습니다 ✓');
+}
+
+let _delVid = null;
+function doDeleteVehicle() {
+  const id = document.getElementById('e_vid').value;
+  if (!id) return;
+  const vs = getVehicles().filter(v => v.id !== id);
+  setVehicles(vs);
+  localStorage.removeItem('recs_' + id);
+  if (getCurrentVid() === id) {
+    setCurrentVid(vs.length ? vs[0].id : '');
+  }
+  closeEdit();
+  render();
+  toast('차량이 삭제됐습니다');
+}
+
+render();
+</script>
+</body>
+</html>

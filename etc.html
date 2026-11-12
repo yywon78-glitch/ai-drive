@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>기타 — 스마트 차계부</title>
+<link rel="stylesheet" href="shared.css?v=1">
+</head>
+<body>
+<div class="page">
+
+  <header class="hdr">
+    <span class="hdr-t">💳 기타 지출</span>
+    <select class="v-sel-light" id="vsel" onchange="onVehicleChange('vsel')"></select>
+  </header>
+
+  <div class="segtabs">
+    <button class="segtab on" onclick="switchTab('hipass',this)">⚡ 하이패스</button>
+    <button class="segtab" onclick="switchTab('insurance',this)">🛡 보험·세금</button>
+    <button class="segtab" onclick="switchTab('other',this)">💸 기타</button>
+  </div>
+
+  <!-- 하이패스 -->
+  <div class="body" id="pane-hipass">
+    <div class="bp">
+      <div class="hipass-card" id="hipassCard">
+        <div>
+          <div class="hb-label">하이패스 현재 잔액</div>
+          <div class="hb-amount" id="hipassAmt">0원</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:10px;opacity:.7">최근 충전</div>
+          <div style="font-size:12px" id="hipassLast">-</div>
+        </div>
+      </div>
+      <div class="m-card form">
+        <div class="m-row">
+          <div class="m-group">
+            <label class="m-label">날짜 *</label>
+            <input type="date" class="m-input" id="hi_date">
+          </div>
+          <div class="m-group">
+            <label class="m-label">충전 금액 (원) *</label>
+            <input type="number" class="m-input" id="hi_amount" placeholder="30000" oninput="calcHipass()">
+          </div>
+        </div>
+        <div class="m-row">
+          <div class="m-group">
+            <label class="m-label">충전 후 잔액 (자동)</label>
+            <input type="text" class="m-input auto" id="hi_balance" readonly placeholder="자동">
+          </div>
+          <div class="m-group">
+            <label class="m-label">충전소</label>
+            <input type="text" class="m-input" id="hi_place" placeholder="선택 사항">
+          </div>
+        </div>
+        <button class="m-btn primary" onclick="saveHipass()">저장</button>
+      </div>
+      <div class="group-lbl">충전 내역</div>
+      <div style="display:flex;flex-direction:column;gap:7px" id="hipassList"></div>
+    </div>
+  </div>
+
+  <!-- 보험·세금 -->
+  <div class="body" id="pane-insurance" style="display:none">
+    <div class="bp">
+      <div class="m-card form">
+        <div class="m-group">
+          <label class="m-label">종류 *</label>
+          <select class="m-select" id="ins_type">
+            <option value="car_insurance">자동차보험</option>
+            <option value="car_tax">자동차세</option>
+            <option value="parking">주차비</option>
+            <option value="other">기타</option>
+          </select>
+        </div>
+        <div class="m-row">
+          <div class="m-group">
+            <label class="m-label">날짜 *</label>
+            <input type="date" class="m-input" id="ins_date">
+          </div>
+          <div class="m-group">
+            <label class="m-label">금액 (원) *</label>
+            <input type="number" class="m-input" id="ins_amount" placeholder="850000">
+          </div>
+        </div>
+        <div class="m-row">
+          <div class="m-group">
+            <label class="m-label">만기일</label>
+            <input type="date" class="m-input" id="ins_expiry">
+          </div>
+          <div class="m-group">
+            <label class="m-label">메모</label>
+            <input type="text" class="m-input" id="ins_memo" placeholder="선택 사항">
+          </div>
+        </div>
+        <button class="m-btn primary" onclick="saveInsurance()">저장</button>
+      </div>
+      <div class="group-lbl">보험·세금 목록</div>
+      <div style="display:flex;flex-direction:column;gap:7px" id="insList"></div>
+    </div>
+  </div>
+
+  <!-- 기타 -->
+  <div class="body" id="pane-other" style="display:none">
+    <div class="bp">
+      <div class="m-card form">
+        <div class="m-row">
+          <div class="m-group">
+            <label class="m-label">날짜 *</label>
+            <input type="date" class="m-input" id="ot_date">
+          </div>
+          <div class="m-group">
+            <label class="m-label">금액 (원) *</label>
+            <input type="number" class="m-input" id="ot_amount" placeholder="10000">
+          </div>
+        </div>
+        <div class="m-group">
+          <label class="m-label">내용 *</label>
+          <input type="text" class="m-input" id="ot_desc" placeholder="예: 세차, 번호판 교체">
+        </div>
+        <button class="m-btn primary" onclick="saveOther()">저장</button>
+      </div>
+      <div class="group-lbl">기타 지출 목록</div>
+      <div style="display:flex;flex-direction:column;gap:7px" id="otherList"></div>
+    </div>
+  </div>
+
+  <nav class="tabbar" id="tabbar"></nav>
+</div>
+
+<script src="data.js?v=1"></script>
+<script src="nav.js?v=1"></script>
+<script>
+renderTabBar('etc');
+renderVehicleSelect('vsel');
+setToday('hi_date');
+setToday('ins_date');
+setToday('ot_date');
+renderHipass();
+
+function switchTab(id, el) {
+  document.querySelectorAll('.segtab').forEach(b => b.classList.remove('on'));
+  el.classList.add('on');
+  ['hipass','insurance','other'].forEach(p => {
+    document.getElementById('pane-'+p).style.display = p === id ? '' : 'none';
+  });
+  if (id === 'hipass')    renderHipass();
+  if (id === 'insurance') renderInsurance();
+  if (id === 'other')     renderOther();
+}
+
+/* ── 하이패스 ── */
+function calcHipass() {
+  const prev = getRecs('hipass');
+  const bal  = prev.length ? (prev[0].balance || 0) : 0;
+  const add  = +document.getElementById('hi_amount').value || 0;
+  document.getElementById('hi_balance').value = add ? numFmt(bal + add) + '원' : '';
+}
+
+function saveHipass() {
+  const date   = document.getElementById('hi_date').value;
+  const amount = +document.getElementById('hi_amount').value;
+  if (!date || !amount) { toast('날짜와 충전 금액을 입력해주세요'); return; }
+  const prev = getRecs('hipass');
+  const bal  = prev.length ? (prev[0].balance || 0) : 0;
+  addRec({
+    id: DB.uid(), type:'hipass',
+    date, amount,
+    balance: bal + amount,
+    place: document.getElementById('hi_place').value.trim()
+  });
+  ['hi_amount','hi_balance','hi_place'].forEach(id => document.getElementById(id).value = '');
+  toast('하이패스 충전 기록이 저장됐습니다 ✓');
+  renderHipass();
+}
+
+function renderHipass() {
+  const recs = getRecs('hipass');
+  const bal  = recs.length ? (recs[0].balance || 0) : 0;
+  const hiAmt = document.getElementById('hipassAmt');
+  const hiLast = document.getElementById('hipassLast');
+  if (hiAmt) hiAmt.textContent = numFmt(bal) + '원';
+  if (hiLast) hiLast.textContent = recs.length ? recs[0].date + ' · +' + numFmt(recs[0].amount) : '-';
+  const list = document.getElementById('hipassList');
+  if (!list) return;
+  list.innerHTML = recs.length ? recs.map(r => `
+    <div class="rec-row">
+      <span class="rec-badge b-hipass">하이패스</span>
+      <div class="rec-main">
+        <div class="rec-title">충전 · ${r.date}${r.place?' · '+r.place:''}</div>
+        <div class="rec-sub">+${numFmt(r.amount)}원 → 잔액 ${numFmt(r.balance)}원</div>
+      </div>
+      <span class="rec-del" onclick="confirmDel('이 충전 기록을 삭제할까요?', ()=>{delRec('${r.id}');renderHipass();toast('삭제됐습니다');})">🗑</span>
+    </div>`).join('')
+  : `<div class="empty"><span class="empty-ic">⚡</span><div class="empty-t">하이패스 충전 기록이 없습니다</div></div>`;
+}
+
+/* ── 보험·세금 ── */
+function saveInsurance() {
+  const date   = document.getElementById('ins_date').value;
+  const amount = +document.getElementById('ins_amount').value;
+  if (!date || !amount) { toast('날짜와 금액을 입력해주세요'); return; }
+  addRec({
+    id: DB.uid(), type:'insurance',
+    insType: document.getElementById('ins_type').value,
+    date, amount,
+    expiry: document.getElementById('ins_expiry').value,
+    memo:   document.getElementById('ins_memo').value.trim()
+  });
+  ['ins_amount','ins_expiry','ins_memo'].forEach(id => document.getElementById(id).value = '');
+  toast('보험·세금 기록이 저장됐습니다 ✓');
+  renderInsurance();
+}
+
+function renderInsurance() {
+  const recs = getRecs('insurance');
+  const list = document.getElementById('insList');
+  list.innerHTML = recs.length ? recs.map(r => `
+    <div class="rec-row">
+      <span class="rec-badge b-ins">${INS_LABEL[r.insType]||r.insType}</span>
+      <div class="rec-main">
+        <div class="rec-title">${INS_LABEL[r.insType]||r.insType} · ${r.date}</div>
+        <div class="rec-sub">${r.expiry?'만기: '+r.expiry+' ':''}${r.memo||''}</div>
+      </div>
+      <span class="rec-amt d-orange">${numFmt(r.amount)}원</span>
+      <span class="rec-del" onclick="confirmDel('이 기록을 삭제할까요?', ()=>{delRec('${r.id}');renderInsurance();toast('삭제됐습니다');})">🗑</span>
+    </div>`).join('')
+  : `<div class="empty"><span class="empty-ic">🛡</span><div class="empty-t">보험·세금 기록이 없습니다</div></div>`;
+}
+
+/* ── 기타 ── */
+function saveOther() {
+  const date   = document.getElementById('ot_date').value;
+  const amount = +document.getElementById('ot_amount').value;
+  const desc   = document.getElementById('ot_desc').value.trim();
+  if (!date || !amount || !desc) { toast('날짜, 금액, 내용을 입력해주세요'); return; }
+  addRec({ id:DB.uid(), type:'other', date, amount, desc });
+  ['ot_amount','ot_desc'].forEach(id => document.getElementById(id).value = '');
+  toast('기타 지출이 저장됐습니다 ✓');
+  renderOther();
+}
+
+function renderOther() {
+  const recs = getRecs('other');
+  const list = document.getElementById('otherList');
+  list.innerHTML = recs.length ? recs.map(r => `
+    <div class="rec-row">
+      <span class="rec-badge b-other">기타</span>
+      <div class="rec-main">
+        <div class="rec-title">${r.desc}</div>
+        <div class="rec-sub">${r.date}</div>
+      </div>
+      <span class="rec-amt">${numFmt(r.amount)}원</span>
+      <span class="rec-del" onclick="confirmDel('이 기록을 삭제할까요?', ()=>{delRec('${r.id}');renderOther();toast('삭제됐습니다');})">🗑</span>
+    </div>`).join('')
+  : `<div class="empty"><span class="empty-ic">💸</span><div class="empty-t">기타 지출 기록이 없습니다</div></div>`;
+}
+
+function render() {
+  renderVehicleSelect('vsel');
+  renderHipass();
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>홈 — 스마트 차계부</title>
+<link rel="stylesheet" href="shared.css?v=1">
+</head>
+<body>
+<div class="page">
+
+  <header class="hdr">
+    <span class="hdr-t">🚗 차계부</span>
+    <select class="v-sel-light" id="vsel" onchange="onVehicleChange('vsel')"></select>
+    <button class="hdr-btn" onclick="location.href='vehicle.html'" style="font-size:12px;padding:0 10px;">＋차량</button>
+  </header>
+
+  <div class="body" id="mainBody">
+    <div class="bp" id="homeContent"></div>
+  </div>
+
+  <nav class="tabbar" id="tabbar"></nav>
+</div>
+
+<script src="data.js?v=1"></script>
+<script src="nav.js?v=1"></script>
+<script>
+renderTabBar('home');
+renderVehicleSelect('vsel');
+
+function render() {
+  renderVehicleSelect('vsel');
+  const v = getV();
+  const mon = new Date(); mon.setDate(1); mon.setHours(0,0,0,0);
+  const today = new Date();
+
+  const fuel  = getRecs('fuel').filter(r => new Date(r.date) >= mon);
+  const maint = getRecs('maint').filter(r => new Date(r.date) >= mon);
+  const drive = getRecs('drive').filter(r => new Date(r.date) >= mon);
+  const hiRecs = getRecs('hipass');
+  const allMaint = getRecs('maint');
+
+  const fAmt  = fuel.reduce((s,r) => s + r.amount, 0);
+  const mAmt  = maint.reduce((s,r) => s + r.amount, 0);
+  const dDist = drive.reduce((s,r) => s + (r.dist||0), 0);
+  const hBal  = hiRecs.length ? (hiRecs[0].balance||0) : 0;
+
+  /* 알림 계산 */
+  const alerts = [];
+  if (v?.insurance) {
+    const d = Math.ceil((new Date(v.insurance) - today) / 86400000);
+    if (d < 90) alerts.push({ cls: d < 30 ? 'r' : 'w', msg: `🔔 자동차보험 만기 D-${d} (${v.insurance})` });
+  }
+  if (v?.inspect) {
+    const d = Math.ceil((new Date(v.inspect) - today) / 86400000);
+    if (d < 90) alerts.push({ cls: d < 30 ? 'r' : 'w', msg: `🔍 정기검사 만기 D-${d} (${v.inspect})` });
+  }
+  allMaint.filter(r => r.nextDate).forEach(r => {
+    const d = Math.ceil((new Date(r.nextDate) - today) / 86400000);
+    if (d < 60) alerts.push({ cls: d < 30 ? 'r' : 'w', msg: `⚠️ ${MAINT_LABEL[r.category]||r.category} D-${d}` });
+  });
+
+  /* 최근 연비 */
+  const effs = getRecs('fuel').filter(r => r.effic > 0).slice(0, 8).reverse();
+  let efficHtml = '';
+  if (effs.length) {
+    const avg = effs.reduce((s,r) => s+r.effic, 0) / effs.length;
+    const last = effs[effs.length-1];
+    const diff = last.effic - avg;
+    const col = diff >= 0 ? 'var(--green)' : 'var(--red)';
+    const max = Math.max(...effs.map(r => r.effic));
+    const bars = effs.map(r => `<div class="mini-bar" style="height:${(r.effic/max*100).toFixed(0)}%;background:${r===last?'var(--blue)':'rgba(37,99,235,.25)'}"></div>`).join('');
+    const lbls = effs.map(r => `<div class="chart-label">${r.date.slice(5)}</div>`).join('');
+    efficHtml = `
+      <div class="m-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span style="font-size:11px;font-weight:700;color:var(--t2)">최근 연비</span>
+          <span style="font-size:12px;color:var(--t2)">평균 <b style="color:var(--blue)">${avg.toFixed(1)}</b> km/L</span>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:10px">
+          <span style="font-size:28px;font-weight:800;color:var(--blue)">${last.effic.toFixed(1)}</span>
+          <span style="font-size:14px;color:var(--t2)">km/L</span>
+          <span style="font-size:12px;font-weight:600;color:${col}">${diff>=0?'▲':'▼'} ${Math.abs(diff).toFixed(1)}</span>
+        </div>
+        <div class="mini-chart">${bars}</div>
+        <div class="chart-labels">${lbls}</div>
+      </div>`;
+  } else {
+    efficHtml = `<div class="m-card"><div style="font-size:13px;color:var(--t3);text-align:center;padding:16px 0">주유 기록이 없습니다</div></div>`;
+  }
+
+  /* 최근 기록 5건 */
+  const allRecs = getAllRecs().slice(0, 10);
+  const typeMap = { fuel:'주유', maint:'정비', drive:'운행', hipass:'하이패스', insurance:'보험·세금', other:'기타' };
+  const badgeMap = { fuel:'b-fuel', maint:'b-maint', drive:'b-drive', hipass:'b-hipass', insurance:'b-ins', other:'b-other' };
+  const recentHtml = allRecs.length ? allRecs.slice(0,5).map(r => {
+    let title='', sub='', amt='';
+    if (r.type==='fuel')      { title=`주유 · ${r.mileage?.toLocaleString()}km`; sub=`${r.liters}L · ${r.price?.toLocaleString()}원/L`; amt=`${r.amount?.toLocaleString()}원`; }
+    else if (r.type==='maint'){ title=`${MAINT_LABEL[r.category]||r.category}`; sub=r.shop||''; amt=`${r.amount?.toLocaleString()}원`; }
+    else if (r.type==='drive'){ title=`${r.from&&r.to?r.from+'→'+r.to:'운행'}`; sub=`${(r.dist||0).toFixed(1)}km · ${PURPOSE_LABEL[r.purpose]||r.purpose}`; amt=''; }
+    else if (r.type==='hipass'){ title=`하이패스 충전`; sub=r.place||''; amt=`+${r.amount?.toLocaleString()}원`; }
+    else if (r.type==='insurance'){ title=INS_LABEL[r.insType]||r.insType; sub=r.memo||''; amt=`${r.amount?.toLocaleString()}원`; }
+    else { title=r.desc||'기타'; sub=''; amt=`${r.amount?.toLocaleString()}원`; }
+    return `<div class="rec-row">
+      <span class="rec-badge ${badgeMap[r.type]||'b-other'}">${typeMap[r.type]||r.type}</span>
+      <div class="rec-main"><div class="rec-title">${title}</div><div class="rec-sub">${r.date}${sub?' · '+sub:''}</div></div>
+      ${amt ? `<span class="rec-amt">${amt}</span>` : ''}
+    </div>`;
+  }).join('') : `<div class="empty"><span class="empty-ic">📋</span><div class="empty-t">기록이 없습니다</div></div>`;
+
+  document.getElementById('homeContent').innerHTML = `
+    <div class="group-lbl">이번달 지출 요약</div>
+    <div class="dash-grid">
+      <div class="dash-card">
+        <div class="d-label">주유비</div>
+        <div class="d-value d-blue">${numFmt(fAmt)}</div>
+        <div class="d-unit">원</div>
+      </div>
+      <div class="dash-card">
+        <div class="d-label">정비비</div>
+        <div class="d-value d-orange">${numFmt(mAmt)}</div>
+        <div class="d-unit">원</div>
+      </div>
+      <div class="dash-card">
+        <div class="d-label">하이패스 잔액</div>
+        <div class="d-value d-purple">${numFmt(hBal)}</div>
+        <div class="d-unit">원</div>
+      </div>
+      <div class="dash-card">
+        <div class="d-label">이번달 운행</div>
+        <div class="d-value d-sky">${dDist.toFixed(0)}</div>
+        <div class="d-unit">km</div>
+      </div>
+    </div>
+
+    ${alerts.length ? `
+    <div class="group-lbl">알림</div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      ${alerts.map(a => `<div class="alert-item ${a.cls}">${a.msg}</div>`).join('')}
+    </div>` : ''}
+
+    ${efficHtml}
+
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div class="group-lbl" style="margin:0">최근 기록</div>
+      <span style="font-size:12px;color:var(--blue);cursor:pointer" onclick="location.href='fuel.html'">주유 입력 →</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:7px">${recentHtml}</div>
+    <div style="height:8px"></div>
+  `;
+}
+
+render();
+</script>
+</body>
+</html>

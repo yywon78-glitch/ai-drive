@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>정비 — 스마트 차계부</title>
+<link rel="stylesheet" href="shared.css?v=1">
+</head>
+<body>
+<div class="page">
+
+  <header class="hdr">
+    <span class="hdr-t">🔧 정비 기록</span>
+    <select class="v-sel-light" id="vsel" onchange="onVehicleChange('vsel')"></select>
+  </header>
+
+  <div class="segtabs">
+    <button class="segtab on" onclick="switchTab('input',this)">＋ 입력</button>
+    <button class="segtab" onclick="switchTab('list',this)">📋 현황</button>
+  </div>
+
+  <!-- 입력 -->
+  <div class="body" id="pane-input">
+    <div class="bp">
+      <div class="m-card form">
+        <div class="m-row">
+          <div class="m-group">
+            <label class="m-label">날짜 *</label>
+            <input type="date" class="m-input" id="m_date" oninput="calcMaint()">
+          </div>
+          <div class="m-group">
+            <label class="m-label">주행거리 (km)</label>
+            <input type="number" class="m-input" id="m_mileage" placeholder="66700" oninput="calcMaint()">
+          </div>
+        </div>
+        <div class="m-group">
+          <label class="m-label">정비 항목 *</label>
+          <select class="m-select" id="m_category" onchange="calcMaint()">
+            <option value="">선택하세요</option>
+            <option value="engine_oil">엔진오일 (합성유)</option>
+            <option value="engine_oil_basic">엔진오일 (일반유)</option>
+            <option value="air_filter">에어클리너</option>
+            <option value="cabin_filter">에어컨 필터</option>
+            <option value="tire_rotation">타이어 로테이션</option>
+            <option value="tire_replace">타이어 교체</option>
+            <option value="brake">브레이크 패드</option>
+            <option value="coolant">냉각수</option>
+            <option value="spark_plug">점화플러그</option>
+            <option value="battery">배터리</option>
+            <option value="exterior">외관 (세차/도색)</option>
+            <option value="tax">세금/검사</option>
+            <option value="other">기타</option>
+          </select>
+        </div>
+        <div class="m-row">
+          <div class="m-group">
+            <label class="m-label">금액 (원) *</label>
+            <input type="number" class="m-input" id="m_amount" placeholder="45000">
+          </div>
+          <div class="m-group">
+            <label class="m-label">정비소</label>
+            <input type="text" class="m-input" id="m_shop" placeholder="선택 사항">
+          </div>
+        </div>
+        <div class="m-row">
+          <div class="m-group">
+            <label class="m-label">다음 예정일 (자동)</label>
+            <input type="date" class="m-input auto" id="m_next_date">
+          </div>
+          <div class="m-group">
+            <label class="m-label">다음 예정 km (자동)</label>
+            <input type="number" class="m-input auto" id="m_next_km" placeholder="자동계산">
+          </div>
+        </div>
+        <div class="m-group">
+          <label class="m-label">메모</label>
+          <input type="text" class="m-input" id="m_memo" placeholder="선택 사항">
+        </div>
+        <button class="m-btn primary" onclick="saveMaint()">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 현황 -->
+  <div class="body" id="pane-list" style="display:none">
+    <div class="bp">
+      <div id="maintUpcoming"></div>
+      <div class="group-lbl">정비 이력</div>
+      <div style="display:flex;flex-direction:column;gap:7px" id="maintList"></div>
+    </div>
+  </div>
+
+  <nav class="tabbar" id="tabbar"></nav>
+</div>
+
+<script src="data.js?v=1"></script>
+<script src="nav.js?v=1"></script>
+<script>
+renderTabBar('maint');
+renderVehicleSelect('vsel');
+setToday('m_date');
+
+function switchTab(id, el) {
+  document.querySelectorAll('.segtab').forEach(b => b.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById('pane-input').style.display = id === 'input' ? '' : 'none';
+  document.getElementById('pane-list').style.display  = id === 'list'  ? '' : 'none';
+  if (id === 'list') renderList();
+}
+
+function calcMaint() {
+  const cat = document.getElementById('m_category').value;
+  const km  = +document.getElementById('m_mileage').value;
+  const d   = document.getElementById('m_date').value;
+  const iv  = MAINT_INTERVAL[cat];
+  if (iv && d) {
+    if (iv.mo) {
+      const nd = new Date(d);
+      nd.setMonth(nd.getMonth() + iv.mo);
+      document.getElementById('m_next_date').value = nd.toISOString().slice(0,10);
+    } else {
+      document.getElementById('m_next_date').value = '';
+    }
+    if (iv.km && km) {
+      document.getElementById('m_next_km').value = km + iv.km;
+    } else {
+      document.getElementById('m_next_km').value = '';
+    }
+  }
+}
+
+function saveMaint() {
+  const date     = document.getElementById('m_date').value;
+  const category = document.getElementById('m_category').value;
+  const amount   = +document.getElementById('m_amount').value;
+  if (!date || !category || !amount) {
+    toast('날짜, 정비 항목, 금액을 입력해주세요');
+    return;
+  }
+  addRec({
+    id: DB.uid(), type:'maint',
+    date, category, amount,
+    mileage:  +document.getElementById('m_mileage').value || 0,
+    shop:     document.getElementById('m_shop').value.trim(),
+    nextDate: document.getElementById('m_next_date').value,
+    nextKm:   +document.getElementById('m_next_km').value || 0,
+    memo:     document.getElementById('m_memo').value.trim()
+  });
+  ['m_amount','m_shop','m_memo','m_next_date','m_next_km','m_mileage'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('m_category').value = '';
+  toast('정비 기록이 저장됐습니다 ✓');
+  switchTab('list', document.querySelectorAll('.segtab')[1]);
+}
+
+function renderList() {
+  const recs  = getRecs('maint');
+  const today = new Date();
+
+  /* 임박 알림 (D-90 이내) */
+  const upcoming = recs
+    .filter(r => r.nextDate)
+    .map(r => ({ ...r, _days: Math.ceil((new Date(r.nextDate) - today) / 86400000) }))
+    .filter(r => r._days < 90)
+    .sort((a,b) => a._days - b._days);
+
+  const upEl = document.getElementById('maintUpcoming');
+  if (upcoming.length) {
+    upEl.innerHTML = `
+      <div class="group-lbl">임박 정비 알림</div>
+      <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:8px">
+        ${upcoming.slice(0,4).map(r => {
+          const cls = r._days < 0 ? 'danger' : r._days <= 30 ? 'danger' : r._days <= 60 ? 'warn' : 'ok';
+          const lbl = r._days < 0 ? `D+${Math.abs(r._days)} 초과` : `D-${r._days}`;
+          return `<div class="upcoming-item ${cls}">
+            <span class="d-badge ${cls}">${lbl}</span>
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:600;color:var(--t1)">${MAINT_LABEL[r.category]||r.category}</div>
+              <div style="font-size:11px;color:var(--t2);margin-top:2px">${r.nextDate}${r.nextKm?' 또는 '+numFmt(r.nextKm)+'km':''}</div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+  } else {
+    upEl.innerHTML = '';
+  }
+
+  const list = document.getElementById('maintList');
+  if (!recs.length) {
+    list.innerHTML = `<div class="empty"><span class="empty-ic">🔧</span><div class="empty-t">정비 기록이 없습니다</div></div>`;
+    return;
+  }
+  list.innerHTML = recs.map(r => {
+    const days = r.nextDate ? Math.ceil((new Date(r.nextDate) - today) / 86400000) : null;
+    const badgeLbl = days != null ? (days < 0 ? '초과' : `D-${days}`) : '완료';
+    const badgeCls = days == null ? 'b-other' : days < 0 ? 'b-ins' : days <= 30 ? 'b-ins' : 'b-maint';
+    return `<div class="rec-row">
+      <span class="rec-badge ${badgeCls}">${badgeLbl}</span>
+      <div class="rec-main">
+        <div class="rec-title">${MAINT_LABEL[r.category]||r.category}</div>
+        <div class="rec-sub">${r.date}${r.shop?' · '+r.shop:''}${r.mileage?' · '+numFmt(r.mileage)+'km':''}${r.nextDate?' · 다음 '+r.nextDate:''}</div>
+      </div>
+      <span class="rec-amt d-orange">${numFmt(r.amount)}원</span>
+      <span class="rec-del" onclick="confirmDel('이 정비 기록을 삭제할까요?', ()=>{delRec('${r.id}');renderList();toast('삭제됐습니다');})">🗑</span>
+    </div>`;
+  }).join('');
+}
+
+function render() {
+  renderVehicleSelect('vsel');
+  const activeTab = document.querySelector('.segtab.on');
+  if (activeTab && activeTab.textContent.includes('현황')) renderList();
+}
+</script>
+</body>
+</html>

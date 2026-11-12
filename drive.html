@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>운행 — 스마트 차계부</title>
+<link rel="stylesheet" href="shared.css?v=1">
+</head>
+<body>
+<div class="page">
+
+  <header class="hdr">
+    <span class="hdr-t">🗺️ 운행 기록</span>
+    <select class="v-sel-light" id="vsel" onchange="onVehicleChange('vsel')"></select>
+  </header>
+
+  <div class="segtabs">
+    <button class="segtab on" onclick="switchTab('input',this)">＋ 입력</button>
+    <button class="segtab" onclick="switchTab('list',this)">📋 현황</button>
+    <button class="segtab" onclick="switchTab('tl',this)">🗺 타임라인</button>
+  </div>
+
+  <!-- 입력 -->
+  <div class="body" id="pane-input">
+    <div class="bp">
+      <div class="m-card form">
+        <div class="m-row">
+          <div class="m-group">
+            <label class="m-label">날짜 *</label>
+            <input type="date" class="m-input" id="d_date">
+          </div>
+          <div class="m-group">
+            <label class="m-label">용도</label>
+            <select class="m-select" id="d_purpose">
+              <option value="commute">출퇴근</option>
+              <option value="business">업무</option>
+              <option value="personal">개인</option>
+              <option value="travel">여행</option>
+              <option value="other">기타</option>
+            </select>
+          </div>
+        </div>
+        <div class="m-row">
+          <div class="m-group">
+            <label class="m-label">출발 시간</label>
+            <input type="time" class="m-input" id="d_start_time" oninput="calcDrive()">
+          </div>
+          <div class="m-group">
+            <label class="m-label">도착 시간</label>
+            <input type="time" class="m-input" id="d_end_time" oninput="calcDrive()">
+          </div>
+        </div>
+        <div class="m-row">
+          <div class="m-group">
+            <label class="m-label">출발 주행거리 (km) *</label>
+            <input type="number" class="m-input" id="d_start_km" placeholder="66700" oninput="calcDrive()">
+          </div>
+          <div class="m-group">
+            <label class="m-label">도착 주행거리 (km) *</label>
+            <input type="number" class="m-input" id="d_end_km" placeholder="66732" oninput="calcDrive()">
+          </div>
+        </div>
+        <div class="m-row">
+          <div class="m-group">
+            <label class="m-label">운행거리 (자동)</label>
+            <input type="text" class="m-input auto" id="d_dist" readonly placeholder="자동">
+          </div>
+          <div class="m-group">
+            <label class="m-label">소요시간 (자동)</label>
+            <input type="text" class="m-input auto" id="d_duration" readonly placeholder="자동">
+          </div>
+        </div>
+        <div class="m-row">
+          <div class="m-group">
+            <label class="m-label">출발지</label>
+            <input type="text" class="m-input" id="d_from" placeholder="예: 집">
+          </div>
+          <div class="m-group">
+            <label class="m-label">목적지</label>
+            <input type="text" class="m-input" id="d_to" placeholder="예: 회사">
+          </div>
+        </div>
+        <button class="m-btn primary" onclick="saveDrive()">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 현황 -->
+  <div class="body" id="pane-list" style="display:none">
+    <div class="bp">
+      <div class="m-card" id="driveStat"></div>
+      <div class="group-lbl">운행 목록</div>
+      <div style="display:flex;flex-direction:column;gap:7px" id="driveList"></div>
+      <button class="m-btn outline" style="margin-top:4px;font-size:13px" onclick="exportBiz()">📄 업무운행 목록 출력 (경비처리용)</button>
+      <div style="height:4px"></div>
+    </div>
+  </div>
+
+  <!-- 타임라인 -->
+  <div class="body" id="pane-tl" style="display:none">
+    <div class="bp">
+      <div class="m-card form">
+        <div style="font-size:13px;font-weight:700;color:var(--green);margin-bottom:6px">🗺️ 구글 타임라인에서 가져오기</div>
+        <div class="m-card alert-g" style="padding:12px">
+          <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:8px">📲 준비 방법</div>
+          <div style="font-size:12px;color:var(--t1);line-height:1.8">
+            1. Google Maps 앱 → 프로필 → 타임라인 → ⋮ → 내보내기<br>
+            2. 또는 <b>takeout.google.com</b> → 위치 기록 → JSON<br>
+            3. 아래에서 JSON 파일 선택
+          </div>
+        </div>
+        <div class="tl-dropzone" id="tlDropzone"
+             onclick="document.getElementById('tlFileInput').click()"
+             ondragover="event.preventDefault();this.classList.add('drag')"
+             ondragleave="this.classList.remove('drag')"
+             ondrop="onTlDrop(event)">
+          <input type="file" id="tlFileInput" accept=".json" style="display:none" onchange="onTlFile(event)">
+          <div style="font-size:32px;margin-bottom:6px">📂</div>
+          <div style="font-size:13px;font-weight:700;color:var(--green);margin-bottom:3px">JSON 파일 선택</div>
+          <div style="font-size:11px;color:var(--t3)">클릭 또는 드래그&amp;드롭</div>
+        </div>
+        <div style="font-size:11px;color:var(--t3);text-align:center">🔒 서버로 전송되지 않습니다 (로컬 처리)</div>
+      </div>
+
+      <div id="tlResult" style="display:none">
+        <div class="m-card form">
+          <div style="font-size:13px;font-weight:700;color:var(--t2)" id="tlResultTitle">파싱 결과</div>
+          <div class="m-row3" id="tlSummary"></div>
+          <div style="display:flex;align-items:center;gap:8px;background:var(--bg);border-radius:8px;padding:8px 10px">
+            <span style="font-size:12px;color:var(--t2);white-space:nowrap">용도 일괄</span>
+            <select class="m-select" id="tlBulkPurpose" style="flex:1;padding:7px 10px;font-size:12px">
+              <option value="commute">출퇴근</option>
+              <option value="business">업무</option>
+              <option value="personal">개인</option>
+              <option value="travel">여행</option>
+              <option value="other">기타</option>
+            </select>
+            <button class="m-btn sm green" onclick="applyBulkPurpose()">적용</button>
+            <button class="m-btn sm outline" onclick="toggleSelectAll()" id="selAllBtn">전체선택</button>
+          </div>
+          <div id="tlItemList" style="max-height:360px;overflow-y:auto;display:flex;flex-direction:column;gap:6px"></div>
+          <button class="m-btn green" id="tlImportBtn" onclick="importTimeline()">선택한 항목 운행 기록으로 등록</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="tabbar" id="tabbar"></nav>
+</div>
+
+<script src="data.js?v=1"></script>
+<script src="nav.js?v=1"></script>
+<script>
+renderTabBar('drive');
+renderVehicleSelect('vsel');
+setToday('d_date');
+fillLastKm();
+
+function fillLastKm() {
+  const dr = getRecs('drive');
+  if (dr.length && dr[0].endKm) { document.getElementById('d_start_km').value = dr[0].endKm; return; }
+  const fu = getRecs('fuel');
+  if (fu.length && fu[0].mileage) document.getElementById('d_start_km').value = fu[0].mileage;
+}
+
+function switchTab(id, el) {
+  document.querySelectorAll('.segtab').forEach(b => b.classList.remove('on'));
+  el.classList.add('on');
+  ['input','list','tl'].forEach(p => {
+    document.getElementById('pane-'+p).style.display = p === id ? '' : 'none';
+  });
+  if (id === 'list') renderList();
+}
+
+function calcDrive() {
+  const s = +document.getElementById('d_start_km').value;
+  const e = +document.getElementById('d_end_km').value;
+  document.getElementById('d_dist').value = (s && e && e > s) ? (e-s).toFixed(1) + ' km' : '';
+  const st = document.getElementById('d_start_time').value;
+  const et = document.getElementById('d_end_time').value;
+  if (st && et) {
+    const diff = (new Date('1970-01-01T'+et) - new Date('1970-01-01T'+st)) / 60000;
+    if (diff > 0) {
+      const h = Math.floor(diff/60), m = diff % 60;
+      document.getElementById('d_duration').value = h ? `${h}시간 ${m}분` : `${m}분`;
+    } else {
+      document.getElementById('d_duration').value = '';
+    }
+  }
+}
+
+function saveDrive() {
+  const date   = document.getElementById('d_date').value;
+  const sKm    = +document.getElementById('d_start_km').value;
+  const eKm    = +document.getElementById('d_end_km').value;
+  if (!date || !sKm || !eKm || eKm <= sKm) {
+    toast('날짜와 출발·도착 주행거리(도착>출발)를 입력해주세요');
+    return;
+  }
+  addRec({
+    id: DB.uid(), type:'drive',
+    date, startKm:sKm, endKm:eKm, dist:eKm-sKm,
+    startTime: document.getElementById('d_start_time').value,
+    endTime:   document.getElementById('d_end_time').value,
+    from:      document.getElementById('d_from').value.trim(),
+    to:        document.getElementById('d_to').value.trim(),
+    purpose:   document.getElementById('d_purpose').value,
+    source:    'manual'
+  });
+  updateVehicleMileage(eKm);
+  ['d_end_km','d_dist','d_duration','d_from','d_to','d_start_time','d_end_time'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('d_start_km').value = eKm;
+  toast('운행 기록이 저장됐습니다 ✓');
+  switchTab('list', document.querySelectorAll('.segtab')[1]);
+}
+
+function renderList() {
+  const recs = getRecs('drive');
+  const mon  = new Date(); mon.setDate(1); mon.setHours(0,0,0,0);
+  const md   = recs.filter(r => new Date(r.date) >= mon).reduce((s,r) => s+(r.dist||0), 0);
+  const bd   = recs.filter(r => r.purpose === 'business').reduce((s,r) => s+(r.dist||0), 0);
+
+  document.getElementById('driveStat').innerHTML = `
+    <div class="m-row3" style="text-align:center">
+      <div>
+        <div class="d-label">이번달 운행</div>
+        <div class="d-value d-sky" style="font-size:17px">${md.toFixed(0)}</div>
+        <div class="d-unit">km</div>
+      </div>
+      <div>
+        <div class="d-label">업무 운행</div>
+        <div class="d-value d-blue" style="font-size:17px">${bd.toFixed(0)}</div>
+        <div class="d-unit">km</div>
+      </div>
+      <div>
+        <div class="d-label">총 건수</div>
+        <div class="d-value" style="font-size:17px;color:var(--t2)">${recs.length}</div>
+        <div class="d-unit">건</div>
+      </div>
+    </div>`;
+
+  const list = document.getElementById('driveList');
+  if (!recs.length) {
+    list.innerHTML = `<div class="empty"><span class="empty-ic">🗺️</span><div class="empty-t">운행 기록이 없습니다</div></div>`;
+    return;
+  }
+  const badgeCls = { commute:'b-commute', business:'b-biz', personal:'b-other', travel:'b-other', other:'b-other' };
+  list.innerHTML = recs.map(r => `
+    <div class="rec-row">
+      <span class="rec-badge ${badgeCls[r.purpose]||'b-other'}">${PURPOSE_LABEL[r.purpose]||r.purpose}${r.source==='timeline'?' 🗺':''}</span>
+      <div class="rec-main">
+        <div class="rec-title">${r.from&&r.to ? r.from+'→'+r.to : '운행'}</div>
+        <div class="rec-sub">${r.date} · ${(r.dist||0).toFixed(1)}km${r.startTime?' · '+r.startTime:''}${r.endTime?'~'+r.endTime:''}</div>
+      </div>
+      <span class="rec-del" onclick="confirmDel('이 운행 기록을 삭제할까요?', ()=>{delRec('${r.id}');renderList();toast('삭제됐습니다');})">🗑</span>
+    </div>`).join('');
+}
+
+function exportBiz() {
+  const recs = getRecs('drive').filter(r => r.purpose === 'business');
+  if (!recs.length) { toast('업무 운행 기록이 없습니다'); return; }
+  let csv = '날짜,출발지,목적지,거리(km),출발시간,도착시간\n';
+  recs.forEach(r => { csv += `${r.date},${r.from||''},${r.to||''},${(r.dist||0).toFixed(1)},${r.startTime||''},${r.endTime||''}\n`; });
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,﻿' + encodeURIComponent(csv);
+  a.download = '업무운행_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+}
+
+/* ── 타임라인 임포트 ── */
+let tlItems = [];
+const GAS_KW = ['주유소','주유','GS칼텍스','SK에너지','S-OIL','현대오일','오일뱅크','에쓰오일','알뜰주유'];
+const REP_KW = ['블루핸즈','오토큐','타이어뱅크','타이어킹','정비소','자동차정비'];
+
+function onTlDrop(e) {
+  e.preventDefault();
+  document.getElementById('tlDropzone').classList.remove('drag');
+  const f = e.dataTransfer.files[0];
+  if (f) parseTl(f);
+}
+function onTlFile(e) { const f = e.target.files[0]; if (f) parseTl(f); }
+
+function parseTl(file) {
+  document.getElementById('tlResult').style.display = 'block';
+  document.getElementById('tlItemList').innerHTML = '<div style="text-align:center;padding:20px;color:var(--t2)">파싱 중...</div>';
+  document.getElementById('tlSummary').innerHTML = '';
+  const r = new FileReader();
+  r.onload = e => {
+    try { processTl(JSON.parse(e.target.result)); }
+    catch(err) { document.getElementById('tlItemList').innerHTML = `<div style="color:var(--red);padding:16px;font-size:13px">파싱 오류: ${err.message}</div>`; }
+  };
+  r.readAsText(file, 'utf-8');
+}
+
+function processTl(json) {
+  const objs = json.timelineObjects || json.semanticSegments || [];
+  const existing = getRecs('drive');
+  tlItems = []; let gas = 0, dup = 0;
+  objs.forEach(obj => {
+    const seg = obj.activitySegment || obj.activity;
+    if (seg) {
+      const at = seg.activityType || seg.topCandidate?.type || '';
+      if (!['IN_PASSENGER_VEHICLE','MOTORCYCLING','IN_VEHICLE'].includes(at)) return;
+      const dur = seg.duration || {};
+      const s = new Date(dur.startTimestamp || dur.startTime || 0);
+      const e = new Date(dur.endTimestamp   || dur.endTime   || 0);
+      if (isNaN(s.getTime())) return;
+      const ks = new Date(s.getTime() + 9*3600000);
+      const ke = new Date(e.getTime() + 9*3600000);
+      const date = ks.toISOString().slice(0,10);
+      const st = ks.toTimeString().slice(0,5), et = ke.toTimeString().slice(0,5);
+      const dist = seg.distance ? seg.distance/1000 : 0;
+      const isDup = existing.some(r => r.date===date && Math.abs((r.dist||0)-dist) < dist*.1);
+      if (isDup) dup++;
+      tlItems.push({ _id:DB.uid(), date, startTime:st, endTime:et, dist:+dist.toFixed(2), purpose:'personal', isGas:false, isDup });
+    }
+    const pl = obj.placeVisit;
+    if (pl) {
+      const nm = pl.location?.name || pl.location?.address || '';
+      const isGas = GAS_KW.some(k => nm.includes(k));
+      const isRep = REP_KW.some(k => nm.includes(k));
+      if (!isGas && !isRep) return;
+      const dur = pl.duration || {};
+      const vt = new Date(dur.startTimestamp || dur.startTime || 0);
+      if (isNaN(vt.getTime())) return;
+      const kv = new Date(vt.getTime() + 9*3600000);
+      tlItems.push({ _id:DB.uid(), date:kv.toISOString().slice(0,10), startTime:kv.toTimeString().slice(0,5), endTime:'', dist:0, purpose:'personal', isGas, isDup:false, placeName:nm });
+      if (isGas) gas++;
+    }
+  });
+  tlItems.sort((a,b) => b.date.localeCompare(a.date));
+  const drives = tlItems.filter(t => !t.isGas);
+  document.getElementById('tlResultTitle').textContent = `파싱 결과 — ${tlItems.length}건 발견`;
+  document.getElementById('tlSummary').innerHTML = `
+    <div style="background:rgba(22,163,74,.08);border:1px solid #bbf7d0;border-radius:10px;padding:12px;text-align:center">
+      <div style="font-size:10px;color:var(--green)">자동차 이동</div>
+      <div style="font-size:22px;font-weight:800;color:var(--green)">${drives.length}</div>
+      <div style="font-size:10px;color:var(--t3)">건</div>
+    </div>
+    <div style="background:rgba(217,119,6,.08);border:1px solid #fde68a;border-radius:10px;padding:12px;text-align:center">
+      <div style="font-size:10px;color:var(--orange)">주유소 방문</div>
+      <div style="font-size:22px;font-weight:800;color:var(--orange)">${gas}</div>
+      <div style="font-size:10px;color:var(--t3)">건</div>
+    </div>
+    <div style="background:rgba(220,38,38,.08);border:1px solid #fecaca;border-radius:10px;padding:12px;text-align:center">
+      <div style="font-size:10px;color:var(--red)">중복 감지</div>
+      <div style="font-size:22px;font-weight:800;color:var(--red)">${dup}</div>
+      <div style="font-size:10px;color:var(--t3)">건</div>
+    </div>`;
+  if (!tlItems.length) {
+    document.getElementById('tlItemList').innerHTML = '<div style="padding:20px;text-align:center;font-size:13px;color:var(--t3)">자동차 이동 기록을 찾지 못했습니다.</div>';
+    return;
+  }
+  renderTlItems();
+}
+
+const PO = s => Object.entries(PURPOSE_LABEL).map(([v,l]) => `<option value="${v}"${v===s?' selected':''}>${l}</option>`).join('');
+
+function renderTlItems() {
+  document.getElementById('tlItemList').innerHTML = tlItems.map((t,i) => {
+    const dup = t.isDup ? `<span style="font-size:10px;padding:2px 6px;border-radius:6px;background:#fecaca;color:#b91c1c;font-weight:700">⚠️ 중복</span>` : '';
+    const gas = t.isGas ? `<span style="font-size:10px;padding:2px 6px;border-radius:6px;background:#fde68a;color:#92400e;font-weight:700">⛽ 주유소</span>` : '';
+    const bg  = t.isGas ? 'rgba(217,119,6,.06)' : t.isDup ? 'rgba(220,38,38,.05)' : 'var(--card)';
+    const info = t.isGas
+      ? `${t.date} · ${t.placeName||'주유소'} · ${t.startTime}`
+      : `${t.date} · ${t.dist.toFixed(1)}km · ${t.startTime}~${t.endTime}`;
+    return `<div style="display:flex;align-items:center;gap:8px;background:${bg};border:1.5px solid var(--bdr);border-radius:10px;padding:10px 12px">
+      <input type="checkbox" class="tl-chk" data-i="${i}"${(!t.isDup)?'checked':''} style="width:16px;height:16px;accent-color:var(--green);flex-shrink:0">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:600;color:var(--t1);display:flex;gap:5px;align-items:center;flex-wrap:wrap">${info}${dup}${gas}</div>
+      </div>
+      ${!t.isGas ? `<select style="padding:5px 8px;font-size:11px;border:1.5px solid var(--bdr);border-radius:7px;background:var(--bg);color:var(--t1)" data-i="${i}" onchange="tlItems[this.dataset.i].purpose=this.value">${PO(t.purpose)}</select>` : ''}
+    </div>`;
+  }).join('');
+  updateTlBtn();
+  document.addEventListener('change', e => { if (e.target.classList.contains('tl-chk')) updateTlBtn(); }, { once:false });
+}
+
+let _selAll = true;
+function toggleSelectAll() {
+  document.querySelectorAll('.tl-chk').forEach(c => c.checked = _selAll);
+  _selAll = !_selAll;
+  document.getElementById('selAllBtn').textContent = _selAll ? '전체선택' : '전체해제';
+  updateTlBtn();
+}
+function updateTlBtn() {
+  const n = document.querySelectorAll('.tl-chk:checked').length;
+  document.getElementById('tlImportBtn').textContent = `선택한 ${n}건 운행 기록으로 등록`;
+}
+function applyBulkPurpose() {
+  const p = document.getElementById('tlBulkPurpose').value;
+  tlItems.forEach(t => { if (!t.isGas) t.purpose = p; });
+  document.querySelectorAll('#tlItemList select').forEach(s => { if (s.dataset.i) { const t = tlItems[+s.dataset.i]; if (!t.isGas) s.value = p; } });
+}
+
+function importTimeline() {
+  const checked = [...document.querySelectorAll('.tl-chk:checked')];
+  if (!checked.length) { toast('선택된 항목이 없습니다'); return; }
+  let dc = 0, gc = 0;
+  checked.forEach(c => {
+    const t = tlItems[+c.dataset.i];
+    addRec({ id:t._id||DB.uid(), type:'drive', date:t.date, startKm:0, endKm:0, dist:t.isGas?0:t.dist, startTime:t.startTime, endTime:t.endTime, from:t.isGas?t.placeName||'주유소':'', to:'', purpose:t.isGas?'personal':t.purpose, source:'timeline' });
+    t.isGas ? gc++ : dc++;
+  });
+  toast(`등록 완료! 운행 ${dc}건, 주유소 ${gc}건`);
+  document.getElementById('tlResult').style.display = 'none';
+  document.getElementById('tlFileInput').value = '';
+  tlItems = [];
+  switchTab('list', document.querySelectorAll('.segtab')[1]);
+}
+
+function render() {
+  renderVehicleSelect('vsel');
+  const activeTab = document.querySelector('.segtab.on');
+  if (activeTab && activeTab.textContent.includes('현황')) renderList();
+}
+</script>
+</body>
+</html>
