@@ -153,20 +153,20 @@ function mkBar(id, labels, data, color, unit='원') {
   const ctx = document.getElementById(id); if (!ctx) return;
   charts[id] = new Chart(ctx, {
     type:'bar',
-    data:{ labels, datasets:[{ data, backgroundColor:color, borderRadius:5 }] },
+    data:{ labels, datasets:[{ data, backgroundColor:color, borderRadius:5, clip:false }] },
     options:{
       plugins:{
         legend:{ display:false },
         datalabels:{
-          anchor:'end', align:'top',
+          anchor:'end', align:'top', clamp:false,
           formatter: v => v > 0 ? (unit==='원' ? _fmt(v) : numFmt(Math.round(v))) : '',
           font:{ size:9, weight:'700' },
           color:'#475569'
         }
       },
-      scales:{ x:{ticks:{font:{size:10}}}, y:{ticks:{font:{size:10}}} },
+      scales:{ x:{ticks:{font:{size:10}}}, y:{ticks:{font:{size:10}}, grace:'20%'} },
       responsive:true,
-      layout:{ padding:{ top:14 } }
+      layout:{ padding:{ top:20 } }
     }
   });
 }
