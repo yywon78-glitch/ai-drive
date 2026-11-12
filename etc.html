@@ -25,19 +25,17 @@
     <button class="pf-btn" onclick="setPeriod(12,this)">1년</button>
     <button class="pf-btn" onclick="setPeriod(0,this)">전체</button>
   </div>
+  <div class="period-filter" id="typeBar" style="border-top:1px solid var(--bdr);">
+    <span style="font-size:12px;font-weight:700;color:var(--t2);white-space:nowrap;flex-shrink:0;">지출구분 :</span>
+    <button class="pf-btn on" id="pf-all" onclick="setFilter('all',this)">전체</button>
+    <button class="pf-btn"    id="pf-hi"  onclick="setFilter('hipass',this)">하이패스</button>
+    <button class="pf-btn"    id="pf-ins" onclick="setFilter('insurance',this)">보험</button>
+    <button class="pf-btn"    id="pf-oth" onclick="setFilter('other',this)">기타</button>
+  </div>
 
   <!-- 현황 -->
   <div class="body" id="pane-list">
     <div class="bp">
-      <!-- 지출구분 필터 -->
-      <div style="display:flex;align-items:center;gap:8px;padding:8px 0 2px;flex-wrap:wrap;">
-        <span style="font-size:12px;font-weight:700;color:var(--t2);white-space:nowrap;flex-shrink:0;">지출구분 :</span>
-        <button class="pf-btn on" id="pf-all" onclick="setFilter('all',this)">전체</button>
-        <button class="pf-btn"    id="pf-hi"  onclick="setFilter('hipass',this)">하이패스</button>
-        <button class="pf-btn"    id="pf-ins" onclick="setFilter('insurance',this)">보험</button>
-        <button class="pf-btn"    id="pf-oth" onclick="setFilter('other',this)">기타</button>
-      </div>
-
       <!-- 목록 -->
       <div style="display:flex;flex-direction:column;gap:7px" id="etcList"></div>
     </div>
@@ -217,6 +215,7 @@ function switchTab(id, el) {
   document.getElementById('pane-list').style.display  = id === 'list'  ? '' : 'none';
   document.getElementById('pane-input').style.display = id === 'input' ? '' : 'none';
   document.getElementById('periodBar').style.display  = id === 'list'  ? '' : 'none';
+  document.getElementById('typeBar').style.display    = id === 'list'  ? '' : 'none';
   if (id === 'list') renderList();
   if (id === 'input') { setToday('et_date'); onTypeChange(); }
 }
