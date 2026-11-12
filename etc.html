@@ -36,8 +36,16 @@
         </div>
       </div>
 
-      <!-- 필터 pills -->
-      <div class="pills" style="border-bottom:none;padding:8px 0 4px;">
+      <!-- 기간 필터 -->
+      <div style="display:flex;gap:5px;flex-wrap:wrap;padding:2px 0 4px;">
+        <button class="pf-btn on" onclick="setPeriod(1,this)">이번달</button>
+        <button class="pf-btn" onclick="setPeriod(3,this)">3개월</button>
+        <button class="pf-btn" onclick="setPeriod(6,this)">6개월</button>
+        <button class="pf-btn" onclick="setPeriod(12,this)">1년</button>
+        <button class="pf-btn" onclick="setPeriod(0,this)">전체</button>
+      </div>
+      <!-- 종류 필터 -->
+      <div class="pills" style="border-bottom:none;padding:4px 0 4px;">
         <div class="pill on"  id="pf-all"  onclick="setFilter('all',this)">전체</div>
         <div class="pill"     id="pf-hi"   onclick="setFilter('hipass',this)">⚡ 하이패스</div>
         <div class="pill"     id="pf-ins"  onclick="setFilter('insurance',this)">🛡 보험·세금</div>
@@ -133,6 +141,7 @@
 <script src="nav.js?v=4"></script>
 <script>
 let _etcFilter = 'all';
+let _etcMonths = 1;
 
 renderTabBar('etc');
 renderVehicleSelect('vsel');
@@ -148,6 +157,13 @@ function switchTab(id, el) {
   if (id === 'input') { setToday('et_date'); onTypeChange(); }
 }
 
+function setPeriod(mo, el) {
+  _etcMonths = mo;
+  document.querySelectorAll('.pf-btn').forEach(b => b.classList.remove('on'));
+  el.classList.add('on');
+  renderList();
+}
+
 function setFilter(f, el) {
   _etcFilter = f;
   document.querySelectorAll('.pills .pill').forEach(p => p.classList.remove('on'));
@@ -158,10 +174,14 @@ function setFilter(f, el) {
 function renderList() {
   const types = ['hipass','insurance','other'];
   let recs = types.flatMap(t => getRecs(t));
+  /* 기간 필터 */
+  if (_etcMonths) {
+    const c = new Date(); c.setMonth(c.getMonth() - _etcMonths); c.setDate(1); c.setHours(0,0,0,0);
+    recs = recs.filter(r => new Date(r.date) >= c);
+  }
   /* 날짜 내림차순 */
   recs.sort((a,b) => b.date.localeCompare(a.date));
-
-  /* 필터 */
+  /* 종류 필터 */
   if (_etcFilter !== 'all') recs = recs.filter(r => r.type === _etcFilter);
 
   /* 하이패스 잔액 카드 */
