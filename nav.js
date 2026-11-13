@@ -26,19 +26,22 @@ function renderTabBar(active) {
     </div>`).join('');
 }
 
-/* ── 토스트 ── */
+/* ── 토스트 (dur=0 : 클릭 전까지 유지) ── */
 function toast(msg, dur=2200) {
   let el = document.getElementById('_toast');
   if (!el) {
     el = document.createElement('div');
     el.id = '_toast';
     el.className = 'toast';
+    el.style.cursor = 'pointer';
+    el.addEventListener('click', () => el.classList.remove('show'));
     document.body.appendChild(el);
   }
   el.textContent = msg;
   el.classList.add('show');
   clearTimeout(el._t);
-  el._t = setTimeout(() => el.classList.remove('show'), dur);
+  if (dur > 0) el._t = setTimeout(() => el.classList.remove('show'), dur);
+  /* dur=0 이면 클릭 전까지 유지 */
 }
 
 /* ── URL 파라미터 ── */
@@ -135,7 +138,7 @@ const _OCR_PROMPTS = {
 
 async function ocrReceipt(dataUrl, type) {
   const key = _getApiKey();
-  if (!key) { toast('❗ API 키 없음 (crm_key) — 명함관리 앱 설정에서 확인'); return null; }
+  if (!key) { toast('❗ API 키 없음 — 명함관리 앱 설정에서 crm_key 확인 (탭하면 닫힘)', 0); return null; }
   const resized = await _resizeImg(dataUrl);
   const base64  = resized.replace(/^data:image\/jpeg;base64,/, '');
   try {
@@ -160,23 +163,23 @@ async function ocrReceipt(dataUrl, type) {
     /* API 오류 체크 */
     if (!res.ok || d.type === 'error') {
       const msg = d.error?.message || `HTTP ${res.status}`;
-      toast('❗ API 오류: ' + msg);
+      toast('❗ API 오류: ' + msg + ' (탭하면 닫힘)', 0);
       console.error('OCR API 오류:', d);
       return null;
     }
     const text = d.content?.[0]?.text || '';
     /* JSON 추출 — greedy 매칭으로 전체 객체 포함 */
     const m = text.match(/\{[\s\S]*\}/);
-    if (!m) { toast('⚠️ 인식됐지만 데이터 추출 실패 — 직접 입력해주세요'); return null; }
+    if (!m) { toast('⚠️ 인식됐지만 데이터 추출 실패 — 직접 입력해주세요 (탭하면 닫힘)', 0); return null; }
     try {
       return JSON.parse(m[0]);
     } catch(pe) {
-      toast('⚠️ JSON 파싱 실패 — 직접 입력해주세요');
+      toast('⚠️ JSON 파싱 실패 — 직접 입력해주세요 (탭하면 닫힘)', 0);
       console.error('JSON 파싱 오류:', m[0]);
       return null;
     }
   } catch(e) {
-    toast('❗ 네트워크 오류: ' + e.message);
+    toast('❗ 네트워크 오류: ' + e.message + ' (탭하면 닫힘)', 0);
     console.error('OCR 오류:', e);
     return null;
   }
