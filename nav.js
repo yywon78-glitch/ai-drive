@@ -156,11 +156,30 @@ async function ocrReceipt(dataUrl, type) {
         ]}]
       })
     });
-    const d    = await res.json();
+    const d = await res.json();
+    /* API 오류 체크 */
+    if (!res.ok || d.type === 'error') {
+      const msg = d.error?.message || `HTTP ${res.status}`;
+      toast('❗ API 오류: ' + msg);
+      console.error('OCR API 오류:', d);
+      return null;
+    }
     const text = d.content?.[0]?.text || '';
-    const m    = text.match(/\{[\s\S]*?\}/);
-    return m ? JSON.parse(m[0]) : null;
-  } catch(e) { console.error('OCR 오류:', e); return null; }
+    /* JSON 추출 — greedy 매칭으로 전체 객체 포함 */
+    const m = text.match(/\{[\s\S]*\}/);
+    if (!m) { toast('⚠️ 인식됐지만 데이터 추출 실패 — 직접 입력해주세요'); return null; }
+    try {
+      return JSON.parse(m[0]);
+    } catch(pe) {
+      toast('⚠️ JSON 파싱 실패 — 직접 입력해주세요');
+      console.error('JSON 파싱 오류:', m[0]);
+      return null;
+    }
+  } catch(e) {
+    toast('❗ 네트워크 오류: ' + e.message);
+    console.error('OCR 오류:', e);
+    return null;
+  }
 }
 
 /* ── 영수증 스캔 버튼 HTML 생성 ── */
