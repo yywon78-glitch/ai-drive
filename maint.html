@@ -337,13 +337,13 @@ async function onMaintScan(e) {
     _maintScanData = dataUrl;
     document.getElementById('m_receipt_img').src = dataUrl;
     document.getElementById('m_receipt_thumb').style.display = '';
-    const result = await ocrReceipt(dataUrl, 'maint');
+    const { ok, data, error } = await ocrReceipt(dataUrl, 'maint');
     e.target.value = '';
-    if (!result) { st.textContent = '❌ 인식 실패 — 직접 입력해주세요'; return; }
-    if (result.date)   document.getElementById('m_date').value   = result.date;
-    if (result.amount) document.getElementById('m_amount').value = result.amount;
-    if (result.shop)   document.getElementById('m_shop').value   = result.shop;
-    if (result.memo)   document.getElementById('m_memo').value   = result.memo;
+    if (!ok) { st.innerHTML = `<b style="color:#dc2626">${error}</b>`; return; }
+    if (data.date)   document.getElementById('m_date').value   = data.date;
+    if (data.amount) document.getElementById('m_amount').value = data.amount;
+    if (data.shop)   document.getElementById('m_shop').value   = data.shop;
+    if (data.memo)   document.getElementById('m_memo').value   = data.memo;
     calcMaint();
     st.textContent = '✅ 인식 완료 — 확인 후 저장하세요';
   };

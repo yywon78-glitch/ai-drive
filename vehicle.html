@@ -162,14 +162,14 @@ async function onVehicleScan(e) {
     const dataUrl = ev.target.result;
     document.getElementById('v_receipt_img').src = dataUrl;
     document.getElementById('v_receipt_thumb').style.display = '';
-    const result = await ocrReceipt(dataUrl, 'vehicle');
+    const { ok, data, error } = await ocrReceipt(dataUrl, 'vehicle');
     e.target.value = '';
-    if (!result) { st.textContent = '❌ 인식 실패 — 직접 입력해주세요'; return; }
-    if (result.plateNo) document.getElementById('v_plate').value = result.plateNo;
-    if (result.name)    document.getElementById('v_name').value  = result.name;
-    if (result.year)    document.getElementById('v_year').value  = result.year;
-    if (result.fuelType && FUEL_LABEL[result.fuelType])
-      document.getElementById('v_fuel').value = result.fuelType;
+    if (!ok) { st.innerHTML = `<b style="color:#dc2626">${error}</b>`; return; }
+    if (data.plateNo) document.getElementById('v_plate').value = data.plateNo;
+    if (data.name)    document.getElementById('v_name').value  = data.name;
+    if (data.year)    document.getElementById('v_year').value  = data.year;
+    if (data.fuelType && FUEL_LABEL[data.fuelType])
+      document.getElementById('v_fuel').value = data.fuelType;
     st.textContent = '✅ 인식 완료 — 확인 후 등록하세요';
   };
   reader.readAsDataURL(file);

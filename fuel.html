@@ -153,13 +153,13 @@ async function onFuelScan(e) {
     document.getElementById('f_receipt_img').src = dataUrl;
     document.getElementById('f_receipt_thumb').style.display = '';
     /* OCR */
-    const result = await ocrReceipt(dataUrl, 'fuel');
+    const { ok, data, error } = await ocrReceipt(dataUrl, 'fuel');
     e.target.value = '';
-    if (!result) { st.textContent = '❌ 인식 실패 — 직접 입력해주세요'; return; }
-    if (result.date)         document.getElementById('f_date').value    = result.date;
-    if (result.liters)       document.getElementById('f_liters').value  = result.liters;
-    if (result.pricePerLiter)document.getElementById('f_price').value   = result.pricePerLiter;
-    if (result.station)      document.getElementById('f_station').value = result.station;
+    if (!ok) { st.innerHTML = `<b style="color:#dc2626">${error}</b>`; return; }
+    if (data.date)          document.getElementById('f_date').value    = data.date;
+    if (data.liters)        document.getElementById('f_liters').value  = data.liters;
+    if (data.pricePerLiter) document.getElementById('f_price').value   = data.pricePerLiter;
+    if (data.station)       document.getElementById('f_station').value = data.station;
     calcFuel();
     st.textContent = '✅ 인식 완료 — 확인 후 저장하세요';
   };

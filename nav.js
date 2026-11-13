@@ -136,9 +136,10 @@ const _OCR_PROMPTS = {
 연료종류는 반드시 gasoline/diesel/lpg/ev/hybrid 중 하나로만 답하세요. 모르는 값은 null.`
 };
 
+/* ocrReceipt: 성공 시 {ok:true, data:{...}}, 실패 시 {ok:false, error:'메시지'} */
 async function ocrReceipt(dataUrl, type) {
   const key = _getApiKey();
-  if (!key) { toast('❗ API 키 없음 — 명함관리 앱 설정에서 crm_key 확인 (탭하면 닫힘)', 0); return null; }
+  if (!key) return { ok:false, error:'❗ API 키 없음 — 명함관리 앱 설정에서 crm_key 확인' };
   const resized = await _resizeImg(dataUrl);
   const base64  = resized.replace(/^data:image\/jpeg;base64,/, '');
   try {
@@ -160,28 +161,23 @@ async function ocrReceipt(dataUrl, type) {
       })
     });
     const d = await res.json();
-    /* API 오류 체크 */
     if (!res.ok || d.type === 'error') {
       const msg = d.error?.message || `HTTP ${res.status}`;
-      toast('❗ API 오류: ' + msg + ' (탭하면 닫힘)', 0);
       console.error('OCR API 오류:', d);
-      return null;
+      return { ok:false, error:'❗ API 오류: ' + msg };
     }
     const text = d.content?.[0]?.text || '';
-    /* JSON 추출 — greedy 매칭으로 전체 객체 포함 */
     const m = text.match(/\{[\s\S]*\}/);
-    if (!m) { toast('⚠️ 인식됐지만 데이터 추출 실패 — 직접 입력해주세요 (탭하면 닫힘)', 0); return null; }
+    if (!m) return { ok:false, error:'⚠️ 인식됐으나 데이터 추출 실패 — 사진을 다시 찍어주세요' };
     try {
-      return JSON.parse(m[0]);
+      return { ok:true, data: JSON.parse(m[0]) };
     } catch(pe) {
-      toast('⚠️ JSON 파싱 실패 — 직접 입력해주세요 (탭하면 닫힘)', 0);
       console.error('JSON 파싱 오류:', m[0]);
-      return null;
+      return { ok:false, error:'⚠️ JSON 파싱 실패 — 직접 입력해주세요' };
     }
   } catch(e) {
-    toast('❗ 네트워크 오류: ' + e.message + ' (탭하면 닫힘)', 0);
     console.error('OCR 오류:', e);
-    return null;
+    return { ok:false, error:'❗ 네트워크 오류: ' + e.message };
   }
 }
 

@@ -233,16 +233,16 @@ async function onEtcScan(e) {
     document.getElementById('etc_receipt_thumb').style.display = '';
     const type = document.getElementById('et_type').value;
     const ocrType = type === 'hipass' ? 'other' : type === 'insurance' ? 'insurance' : 'other';
-    const result = await ocrReceipt(dataUrl, ocrType);
+    const { ok, data, error } = await ocrReceipt(dataUrl, ocrType);
     e.target.value = '';
-    if (!result) { st.textContent = '❌ 인식 실패 — 직접 입력해주세요'; return; }
-    if (result.date)   document.getElementById('et_date').value   = result.date;
-    if (result.amount) document.getElementById('et_amount').value = result.amount;
+    if (!ok) { st.innerHTML = `<b style="color:#dc2626">${error}</b>`; return; }
+    if (data.date)   document.getElementById('et_date').value   = data.date;
+    if (data.amount) document.getElementById('et_amount').value = data.amount;
     if (type === 'insurance') {
-      if (result.expiry) document.getElementById('et_expiry').value = result.expiry;
-      if (result.memo)   document.getElementById('et_insmemo').value = result.memo;
+      if (data.expiry) document.getElementById('et_expiry').value  = data.expiry;
+      if (data.memo)   document.getElementById('et_insmemo').value = data.memo;
     }
-    if (type === 'other' && result.desc) document.getElementById('et_desc').value = result.desc;
+    if (type === 'other' && data.desc) document.getElementById('et_desc').value = data.desc;
     if (type === 'hipass') onAmountChange();
     st.textContent = '✅ 인식 완료 — 확인 후 저장하세요';
   };
