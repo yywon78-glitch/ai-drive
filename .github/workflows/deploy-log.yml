@@ -1,0 +1,24 @@
+name: 배포 로그
+run-name: "${{ github.event.head_commit.message }}"
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  log:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 변경내역 요약
+        run: |
+          echo "## 🚗 스마트 차계부 배포" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| 항목 | 내용 |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 📝 변경내역 | ${{ github.event.head_commit.message }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🕐 배포 시각 | ${{ github.event.head_commit.timestamp }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 👤 작성자 | ${{ github.event.head_commit.author.name }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔗 커밋 | ${{ github.sha }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 배포 URL" >> $GITHUB_STEP_SUMMARY
+          echo "https://yywon78-glitch.github.io/ai-drive/" >> $GITHUB_STEP_SUMMARY

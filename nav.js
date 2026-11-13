@@ -1,5 +1,13 @@
 /* ── nav.js : 탭바, 토스트, 공통 유틸 ── */
 
+/* ── 첫 진입 시 항상 홈에서 시작 ── */
+(function(){
+  const pg = location.pathname.split('/').pop() || 'index.html';
+  if (pg !== 'index.html' && !sessionStorage.getItem('drive_app_started')) {
+    location.replace('index.html');
+  }
+})();
+
 function renderTabBar(active) {
   const el = document.getElementById('tabbar');
   if (!el) return;
