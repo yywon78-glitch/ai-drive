@@ -24,6 +24,15 @@
       <!-- 신규 차량 등록 폼 -->
       <div class="group-lbl" style="margin-top:4px">새 차량 등록</div>
       <div class="m-card form" id="regForm">
+        <!-- 등록증 스캔 -->
+        <div style="display:flex;align-items:center;gap:10px;">
+          <label style="display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:9px;background:#f0fdf4;border:1.5px solid #bbf7d0;color:#15803d;font-size:13px;font-weight:700;cursor:pointer;">
+            📷 등록증 스캔
+            <input id="v_scan" type="file" accept="image/*" capture="environment" style="display:none" onchange="onVehicleScan(event)">
+          </label>
+          <span id="v_scan_status" style="font-size:12px;color:var(--t3);"></span>
+        </div>
+        <div id="v_receipt_thumb" style="display:none;margin:-4px 0;"><img id="v_receipt_img" style="width:100%;max-height:160px;object-fit:contain;border-radius:8px;border:1px solid var(--bdr);"></div>
         <div class="m-row">
           <div class="m-group">
             <label class="m-label">차량번호 *</label>
@@ -143,6 +152,28 @@
 renderTabBar('home');
 
 const FUEL_LABEL = { gasoline:'휘발유', diesel:'경유', lpg:'LPG', ev:'전기', hybrid:'하이브리드' };
+
+async function onVehicleScan(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const st = document.getElementById('v_scan_status');
+  st.textContent = '🔍 인식 중...';
+  const reader = new FileReader();
+  reader.onload = async ev => {
+    const dataUrl = ev.target.result;
+    document.getElementById('v_receipt_img').src = dataUrl;
+    document.getElementById('v_receipt_thumb').style.display = '';
+    const result = await ocrReceipt(dataUrl, 'vehicle');
+    e.target.value = '';
+    if (!result) { st.textContent = '❌ 인식 실패 — 직접 입력해주세요'; return; }
+    if (result.plateNo) document.getElementById('v_plate').value = result.plateNo;
+    if (result.name)    document.getElementById('v_name').value  = result.name;
+    if (result.year)    document.getElementById('v_year').value  = result.year;
+    if (result.fuelType && FUEL_LABEL[result.fuelType])
+      document.getElementById('v_fuel').value = result.fuelType;
+    st.textContent = '✅ 인식 완료 — 확인 후 등록하세요';
+  };
+  reader.readAsDataURL(file);
+}
 
 function render() {
   const vs  = getVehicles();

@@ -118,7 +118,11 @@ const _OCR_PROMPTS = {
 
   other: `이 영수증 사진에서 정보를 추출해 JSON만 반환하세요:
 {"date":"YYYY-MM-DD","amount":숫자,"desc":"업체명 또는 내용"}
-날짜가 없으면 오늘, 모르는 값은 null.`
+날짜가 없으면 오늘, 모르는 값은 null.`,
+
+  vehicle: `이 차량등록증 사진에서 정보를 추출해 JSON만 반환하세요(설명 없이):
+{"plateNo":"차량번호(예:123가4567)","name":"차명(예:그랜저)","year":"연식(4자리 연도)","fuelType":"연료종류(gasoline/diesel/lpg/ev/hybrid 중 하나)"}
+연료종류는 반드시 gasoline/diesel/lpg/ev/hybrid 중 하나로만 답하세요. 모르는 값은 null.`
 };
 
 async function ocrReceipt(dataUrl, type) {
