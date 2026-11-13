@@ -135,7 +135,13 @@ const _OCR_PROMPTS = {
 
 async function ocrReceipt(dataUrl, type) {
   const key = _getApiKey();
-  if (!key) { toast('❗ CRM 앱에서 Claude API 키를 먼저 설정해주세요'); return null; }
+  if (!key) {
+    /* 같은 도메인이라 localStorage 공유 — CRM 설정으로 이동 */
+    if (confirm('API 키가 없습니다.\n명함관리 앱 설정에서 Claude API 키를 등록하시겠습니까?')) {
+      location.href = '/ai-crm/settings.html';
+    }
+    return null;
+  }
   const resized = await _resizeImg(dataUrl);
   const base64  = resized.replace(/^data:image\/jpeg;base64,/, '');
   try {
